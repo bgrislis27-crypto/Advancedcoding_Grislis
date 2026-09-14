@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Survive</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="hud">
+        <div>
+          <p class="eyebrow">Top-down survival</p>
+          <h1>Survive</h1>
+        </div>
+        <p class="hint">Use <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> to move</p>
+      </header>
+
+      <div class="stage">
+        <canvas id="game" width="960" height="600" aria-label="Game arena"></canvas>
+      </div>
+    </main>
+
+    <!-- Scripts load in order so each file can use the classes above it. -->
+    <script src="js/input.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>
