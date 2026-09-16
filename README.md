@@ -32,6 +32,11 @@ Then visit [http://localhost:8000](http://localhost:8000).
 | `js/main.js` | Starts the game |
 | `assets/player.png` | Pixel-art player sprite (backpack and flashlight) |
 | `assets/monster.png` | Pixel-art monster sprite (glowing eyes) |
+| `assets/food_collection.png` | Pixel-art food item set |
+| `assets/apple.png` | Apple pickup sprite |
+| `assets/berries.png` | Berry pickup sprite |
+| `assets/canned_food.png` | Canned food pickup sprite |
+| `assets/water_bottle.png` | Water bottle pickup sprite |
 
 ## Current progress
 
