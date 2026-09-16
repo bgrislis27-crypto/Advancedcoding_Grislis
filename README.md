@@ -31,6 +31,7 @@ Then visit [http://localhost:8000](http://localhost:8000).
 | `js/game.js` | Game loop and arena |
 | `js/main.js` | Starts the game |
 | `assets/player.png` | Pixel-art player sprite (backpack and flashlight) |
+| `assets/monster.png` | Pixel-art monster sprite (glowing eyes) |
 
 ## Current progress
 
