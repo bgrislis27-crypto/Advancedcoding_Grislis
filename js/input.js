@@ -1,14 +1,14 @@
 /**
- * Tracks whether W, A, S, and D are currently held down.
+ * Tracks whether the arrow keys are currently held down.
  * The game reads this each frame instead of moving the player inside key events.
  */
 class Input {
   constructor() {
     this.keys = {
-      w: false,
-      a: false,
-      s: false,
-      d: false,
+      ArrowUp: false,
+      ArrowDown: false,
+      ArrowLeft: false,
+      ArrowRight: false,
     };
 
     window.addEventListener("keydown", (event) => this.setKey(event, true));
@@ -20,11 +20,9 @@ class Input {
   }
 
   setKey(event, isPressed) {
-    const key = event.key.toLowerCase();
-
-    if (key in this.keys) {
+    if (event.key in this.keys) {
       event.preventDefault();
-      this.keys[key] = isPressed;
+      this.keys[event.key] = isPressed;
     }
   }
 }

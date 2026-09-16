@@ -18,7 +18,7 @@ Then visit [http://localhost:8000](http://localhost:8000).
 
 ## Controls
 
-- **W A S D** — move the player
+- **Arrow keys** — move the player
 
 ## Project layout
 
@@ -26,7 +26,7 @@ Then visit [http://localhost:8000](http://localhost:8000).
 | --- | --- |
 | `index.html` | Page layout and canvas |
 | `css/style.css` | Menu/HUD styling around the game |
-| `js/input.js` | Tracks WASD key presses |
+| `js/input.js` | Tracks arrow key presses |
 | `js/player.js` | Player position, movement, and drawing |
 | `js/game.js` | Game loop and arena |
 | `js/main.js` | Starts the game |
