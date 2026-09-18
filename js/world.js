@@ -14,6 +14,8 @@ export class World {
     this.snowPositions = null;
 
     this.addTerrain();
+    this.addMountains();
+    this.addClouds();
     this.addForest();
     this.addRocks();
     this.addMeadow();
@@ -66,8 +68,10 @@ export class World {
       const color = new THREE.Color();
       if (y > 38) color.copy(snow);
       else if (y > 26) color.lerpColors(rock, snow, smoothstep(26, 40, y));
-      else if (d < 55) color.lerpColors(grass, bright, flower);
-      else color.lerpColors(dry, rock, smoothstep(18, 34, y));
+      else if (d < 55) {
+        color.lerpColors(grass, bright, flower);
+        if (flower > 0.62) color.lerp(new THREE.Color(0xd7c34a), 0.35);
+      } else color.lerpColors(dry, rock, smoothstep(18, 34, y));
 
       colors[i * 3] = color.r;
       colors[i * 3 + 1] = color.g;
@@ -87,6 +91,63 @@ export class World {
     );
     mesh.receiveShadow = true;
     this.scene.add(mesh);
+  }
+
+  addMountains() {
+    const rock = new THREE.Color(0x8d9094);
+    const snow = new THREE.Color(0xf4f7fb);
+    for (let i = 0; i < 18; i++) {
+      const angle = -Math.PI * 0.72 + (i / 17) * Math.PI * 1.44;
+      const dist = 148 + (i % 4) * 10;
+      const x = Math.sin(angle) * dist;
+      const z = -Math.abs(Math.cos(angle)) * dist - 10;
+      const peak = new THREE.ConeGeometry(16 + (i % 5) * 3.5, 48 + (i % 6) * 8, 6);
+      const colors = new Float32Array(peak.attributes.position.count * 3);
+      for (let v = 0; v < peak.attributes.position.count; v++) {
+        const y = peak.attributes.position.getY(v);
+        const mix = smoothstep(4, 18, y);
+        const color = rock.clone().lerp(snow, mix);
+        colors[v * 3] = color.r;
+        colors[v * 3 + 1] = color.g;
+        colors[v * 3 + 2] = color.b;
+      }
+      peak.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+      const mesh = new THREE.Mesh(
+        peak,
+        new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.96, flatShading: true })
+      );
+      mesh.position.set(x, this.heightAt(x, z) + 10, z);
+      mesh.rotation.y = Math.random() * Math.PI;
+      this.scene.add(mesh);
+    }
+  }
+
+  addClouds() {
+    const canvas = document.createElement("canvas");
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext("2d");
+    const gradient = ctx.createRadialGradient(128, 128, 20, 128, 128, 120);
+    gradient.addColorStop(0, "rgba(255,255,255,0.85)");
+    gradient.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 256, 256);
+    const texture = new THREE.CanvasTexture(canvas);
+
+    for (let i = 0; i < 10; i++) {
+      const cloud = new THREE.Mesh(
+        new THREE.PlaneGeometry(48 + Math.random() * 30, 18 + Math.random() * 10),
+        new THREE.MeshBasicMaterial({
+          map: texture,
+          transparent: true,
+          depthWrite: false,
+          opacity: 0.55,
+        })
+      );
+      cloud.position.set((Math.random() - 0.5) * 220, 48 + Math.random() * 18, -40 - Math.random() * 140);
+      cloud.lookAt(0, 40, 0);
+      this.scene.add(cloud);
+    }
   }
 
   addForest() {
@@ -110,8 +171,8 @@ export class World {
       const x = (Math.random() - 0.5) * 280;
       const z = (Math.random() - 0.5) * 280;
       const d = Math.hypot(x, z);
-      if (d < 16 || d > 138) continue;
-      if (z < -6 && Math.abs(x) < 9 && d < 80) continue;
+      if (d < 22 || d > 138) continue;
+      if (z < 8 && Math.abs(x) < 14 && d < 90) continue;
       if (this.treeSpots.some((t) => Math.hypot(t.x - x, t.z - z) < 4.2)) continue;
 
       const scale = 1.3 + Math.random() * 1.7;
@@ -128,10 +189,10 @@ export class World {
     this.scene.add(mesh);
 
     const heroPositions = [
-      [6.5, 8.5, 2.8],
-      [11, 4.2, 2.3],
-      [-14, 3, 2.1],
-      [18, -12, 2.6],
+      [9.5, -4, 2.1],
+      [16, 8, 1.8],
+      [-18, 6, 1.9],
+      [22, -18, 2.2],
     ];
     for (const [x, z, scale] of heroPositions) {
       const tree = new THREE.Mesh(pine, material);
@@ -171,7 +232,7 @@ export class World {
       new THREE.BoxGeometry(18, 14, 10),
       new THREE.MeshStandardMaterial({ color: 0x6f736c, roughness: 1, flatShading: true })
     );
-    cliff.position.set(28, this.heightAt(28, 6) + 4, 6);
+    cliff.position.set(42, this.heightAt(42, -8) + 5, -8);
     cliff.rotation.y = 0.4;
     cliff.castShadow = true;
     cliff.receiveShadow = true;
@@ -191,9 +252,9 @@ export class World {
       const x = (Math.random() - 0.5) * 90;
       const z = (Math.random() - 0.5) * 90;
       if (Math.hypot(x, z) > 48) continue;
-      dummy.position.set(x, this.heightAt(x, z) + 0.14, z);
+      dummy.position.set(x, this.heightAt(x, z) + 0.16, z);
       dummy.rotation.y = Math.random() * Math.PI;
-      dummy.scale.setScalar(0.7 + Math.random() * 0.8);
+      dummy.scale.setScalar(1.1 + Math.random() * 1.1);
       dummy.updateMatrix();
       flowers.setMatrixAt(n, dummy.matrix);
       n += 1;
@@ -230,14 +291,27 @@ export class World {
     }
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = 32;
+    canvas.height = 32;
+    const ctx = canvas.getContext("2d");
+    const gradient = ctx.createRadialGradient(16, 16, 1, 16, 16, 14);
+    gradient.addColorStop(0, "rgba(255,255,255,1)");
+    gradient.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 32, 32);
+
     this.snow = new THREE.Points(
       geometry,
       new THREE.PointsMaterial({
+        map: new THREE.CanvasTexture(canvas),
         color: 0xffffff,
-        size: 0.08,
+        size: 0.12,
         transparent: true,
-        opacity: 0.85,
+        opacity: 0.9,
         depthWrite: false,
+        alphaTest: 0.05,
       })
     );
     this.snowPositions = positions;
@@ -275,14 +349,14 @@ function colored(geometry, color) {
 
 function createPineGeometry() {
   const parts = [];
-  const trunk = new THREE.CylinderGeometry(0.14, 0.24, 6.2, 6);
-  trunk.translate(0, 3.1, 0);
+  const trunk = new THREE.CylinderGeometry(0.11, 0.2, 7.4, 7);
+  trunk.translate(0, 3.7, 0);
   parts.push(colored(trunk, new THREE.Color(0x5b3b24)));
 
-  const greens = [0x1e3f22, 0x27542a, 0x1b3a20, 0x234b26, 0x16341b, 0x1a3c1f];
-  for (let i = 0; i < 6; i++) {
-    const cone = new THREE.ConeGeometry(2.05 - i * 0.26, 2.5, 8);
-    cone.translate(0, 3.6 + i * 1.12, 0);
+  const greens = [0x1e3f22, 0x27542a, 0x1b3a20, 0x234b26, 0x16341b, 0x1a3c1f, 0x214826];
+  for (let i = 0; i < 7; i++) {
+    const cone = new THREE.ConeGeometry(1.55 - i * 0.18, 2.35, 9);
+    cone.translate(0, 4.1 + i * 1.05, 0);
     parts.push(colored(cone, new THREE.Color(greens[i])));
   }
 

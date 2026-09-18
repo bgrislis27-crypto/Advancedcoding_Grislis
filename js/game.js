@@ -22,7 +22,7 @@ export class Game {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     this.scene = new THREE.Scene();
-    this.scene.fog = new THREE.Fog(0xb9cbe0, 48, 280);
+    this.scene.fog = new THREE.Fog(0xc5d8ee, 70, 340);
 
     this.camera = new THREE.PerspectiveCamera(68, window.innerWidth / window.innerHeight, 0.08, 600);
     this.scene.add(this.camera);
@@ -50,19 +50,19 @@ export class Game {
     this.scene.add(sky);
 
     const sunPos = new THREE.Vector3();
-    const phi = THREE.MathUtils.degToRad(90 - 22);
-    const theta = THREE.MathUtils.degToRad(168);
+    const phi = THREE.MathUtils.degToRad(90 - 38);
+    const theta = THREE.MathUtils.degToRad(175);
     sunPos.setFromSphericalCoords(1, phi, theta);
     sky.material.uniforms.sunPosition.value.copy(sunPos);
-    sky.material.uniforms.turbidity.value = 4.5;
-    sky.material.uniforms.rayleigh.value = 1.15;
-    sky.material.uniforms.mieCoefficient.value = 0.004;
-    sky.material.uniforms.mieDirectionalG.value = 0.8;
+    sky.material.uniforms.turbidity.value = 2.2;
+    sky.material.uniforms.rayleigh.value = 1.35;
+    sky.material.uniforms.mieCoefficient.value = 0.003;
+    sky.material.uniforms.mieDirectionalG.value = 0.82;
 
-    this.scene.add(new THREE.HemisphereLight(0xcfe6ff, 0x5d6b3a, 0.55));
-    this.scene.add(new THREE.AmbientLight(0xffffff, 0.18));
+    this.scene.add(new THREE.HemisphereLight(0xd7ebff, 0x6a7b42, 0.7));
+    this.scene.add(new THREE.AmbientLight(0xffffff, 0.22));
 
-    this.sun = new THREE.DirectionalLight(0xfff1d6, 2.15);
+    this.sun = new THREE.DirectionalLight(0xfff3d8, 2.4);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(2048, 2048);
     this.sun.shadow.camera.near = 1;

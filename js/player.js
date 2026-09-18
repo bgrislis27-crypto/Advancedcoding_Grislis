@@ -5,10 +5,10 @@ export class Player {
   constructor(camera, world) {
     this.camera = camera;
     this.world = world;
-    this.x = 2;
-    this.z = 18;
+    this.x = 0;
+    this.z = 24;
     this.yaw = 0;
-    this.pitch = -0.08;
+    this.pitch = -0.04;
     this.eyeHeight = 1.7;
     this.walkSpeed = 6.2;
     this.sprintSpeed = 10.5;
