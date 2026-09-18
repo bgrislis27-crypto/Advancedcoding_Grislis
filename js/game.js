@@ -1,14 +1,92 @@
+import * as THREE from "three";
+import { Sky } from "three/addons/objects/Sky.js";
+import { Input } from "./input.js";
+import { World } from "./world.js";
+import { Player } from "./player.js";
+import { Viewmodel } from "./viewmodel.js";
+import { Hud } from "./hud.js";
+
 /**
- * Owns the canvas, game loop, arena drawing, and player updates.
+ * Sets up the 3D scene, lighting, fog, and the main loop.
  */
-class Game {
+export class Game {
   constructor(canvas) {
     this.canvas = canvas;
-    this.ctx = canvas.getContext("2d");
-    this.input = new Input();
-    this.player = new Player(canvas.width / 2, canvas.height / 2);
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.12;
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+    this.scene = new THREE.Scene();
+    this.scene.fog = new THREE.Fog(0xb9cbe0, 48, 280);
+
+    this.camera = new THREE.PerspectiveCamera(68, window.innerWidth / window.innerHeight, 0.08, 600);
+    this.scene.add(this.camera);
+
+    this.addSkyAndLights();
+
+    this.world = new World(this.scene);
+    this.input = new Input(canvas);
+    this.player = new Player(this.camera, this.world);
+    this.viewmodel = new Viewmodel(this.camera);
+    this.hud = new Hud();
     this.lastTime = 0;
-    this.padding = 28;
+    this.started = false;
+
+    window.addEventListener("resize", () => this.resize());
+    document.getElementById("start-btn").addEventListener("click", () => this.enter());
+    canvas.addEventListener("click", () => {
+      if (this.started) this.input.lock();
+    });
+  }
+
+  addSkyAndLights() {
+    const sky = new Sky();
+    sky.scale.setScalar(4500);
+    this.scene.add(sky);
+
+    const sunPos = new THREE.Vector3();
+    const phi = THREE.MathUtils.degToRad(90 - 22);
+    const theta = THREE.MathUtils.degToRad(168);
+    sunPos.setFromSphericalCoords(1, phi, theta);
+    sky.material.uniforms.sunPosition.value.copy(sunPos);
+    sky.material.uniforms.turbidity.value = 4.5;
+    sky.material.uniforms.rayleigh.value = 1.15;
+    sky.material.uniforms.mieCoefficient.value = 0.004;
+    sky.material.uniforms.mieDirectionalG.value = 0.8;
+
+    this.scene.add(new THREE.HemisphereLight(0xcfe6ff, 0x5d6b3a, 0.55));
+    this.scene.add(new THREE.AmbientLight(0xffffff, 0.18));
+
+    this.sun = new THREE.DirectionalLight(0xfff1d6, 2.15);
+    this.sun.castShadow = true;
+    this.sun.shadow.mapSize.set(2048, 2048);
+    this.sun.shadow.camera.near = 1;
+    this.sun.shadow.camera.far = 160;
+    this.sun.shadow.camera.left = -50;
+    this.sun.shadow.camera.right = 50;
+    this.sun.shadow.camera.top = 50;
+    this.sun.shadow.camera.bottom = -50;
+    this.sun.shadow.bias = -0.0004;
+    this.scene.add(this.sun);
+    this.scene.add(this.sun.target);
+    this.sunDirection = sunPos.clone();
+  }
+
+  enter() {
+    this.started = true;
+    this.hud.show();
+    this.input.lock();
+  }
+
+  resize() {
+    this.camera.aspect = window.innerWidth / window.innerHeight;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
   start() {
@@ -19,87 +97,25 @@ class Game {
   loop(time) {
     const dt = Math.min((time - this.lastTime) / 1000, 0.05);
     this.lastTime = time;
-
     this.update(dt);
-    this.draw();
-
-    requestAnimationFrame((nextTime) => this.loop(nextTime));
+    this.renderer.render(this.scene, this.camera);
+    requestAnimationFrame((next) => this.loop(next));
   }
 
   update(dt) {
-    this.player.update(dt, this.input, this.getBounds());
-  }
-
-  getBounds() {
-    return {
-      left: this.padding,
-      top: this.padding,
-      right: this.canvas.width - this.padding,
-      bottom: this.canvas.height - this.padding,
-    };
-  }
-
-  draw() {
-    const { ctx, canvas } = this;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    this.drawArena();
-    this.player.draw(ctx);
-    this.drawVignette();
-  }
-
-  drawArena() {
-    const { ctx, canvas } = this;
-    const tileSize = 40;
-
-    ctx.fillStyle = "#101820";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    for (let y = 0; y < canvas.height; y += tileSize) {
-      for (let x = 0; x < canvas.width; x += tileSize) {
-        const isDark = ((x / tileSize) + (y / tileSize)) % 2 === 0;
-        ctx.fillStyle = isDark ? "#121c26" : "#15202b";
-        ctx.fillRect(x, y, tileSize, tileSize);
-      }
+    if (this.started) {
+      this.player.update(dt, this.input);
+      this.viewmodel.update(dt, this.player, this.input.drawing);
+      this.world.update(dt, this.player);
+      this.hud.update(this.player, this.viewmodel.draw);
     }
 
-    ctx.strokeStyle = "rgba(90, 120, 145, 0.12)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    for (let x = 0; x <= canvas.width; x += tileSize) {
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, canvas.height);
-    }
-    for (let y = 0; y <= canvas.height; y += tileSize) {
-      ctx.moveTo(0, y);
-      ctx.lineTo(canvas.width, y);
-    }
-    ctx.stroke();
-
-    ctx.strokeStyle = "#2f4a5c";
-    ctx.lineWidth = 3;
-    ctx.strokeRect(
-      this.padding,
-      this.padding,
-      canvas.width - this.padding * 2,
-      canvas.height - this.padding * 2
+    this.sun.position.set(
+      this.player.x + this.sunDirection.x * 70,
+      this.player.camera.position.y + 55,
+      this.player.z + this.sunDirection.z * 70
     );
-  }
-
-  drawVignette() {
-    const { ctx, canvas } = this;
-    const gradient = ctx.createRadialGradient(
-      canvas.width / 2,
-      canvas.height / 2,
-      canvas.height * 0.25,
-      canvas.width / 2,
-      canvas.height / 2,
-      canvas.width * 0.7
-    );
-
-    gradient.addColorStop(0, "rgba(0, 0, 0, 0)");
-    gradient.addColorStop(1, "rgba(4, 8, 12, 0.55)");
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    this.sun.target.position.set(this.player.x, this.world.heightAt(this.player.x, this.player.z), this.player.z);
+    this.sun.target.updateMatrixWorld();
   }
 }

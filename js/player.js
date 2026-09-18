@@ -1,77 +1,85 @@
 /**
- * The player is a simple circle that can walk around the arena with the arrow keys.
+ * First-person walker: mouse look, WASD/arrows, stamina sprint, and sticking to the terrain.
  */
-class Player {
-  constructor(x, y) {
-    this.x = x;
-    this.y = y;
-    this.radius = 16;
-    this.speed = 240;
-    this.facingX = 0;
-    this.facingY = -1;
+export class Player {
+  constructor(camera, world) {
+    this.camera = camera;
+    this.world = world;
+    this.x = 2;
+    this.z = 18;
+    this.yaw = 0;
+    this.pitch = -0.08;
+    this.eyeHeight = 1.7;
+    this.walkSpeed = 6.2;
+    this.sprintSpeed = 10.5;
+    this.stamina = 100;
+    this.health = 100;
+    this.hunger = 86;
+    this.thirst = 74;
+    this.bob = 0;
+    this.speed = 0;
+
+    this.syncCamera();
   }
 
-  update(dt, input, bounds) {
-    let dx = 0;
-    let dy = 0;
+  update(dt, input) {
+    const look = input.consumeLook();
+    this.yaw -= look.x * 0.0022;
+    this.pitch -= look.y * 0.0022;
+    this.pitch = Math.max(-1.35, Math.min(1.35, this.pitch));
 
-    if (input.isDown("ArrowLeft")) dx -= 1;
-    if (input.isDown("ArrowRight")) dx += 1;
-    if (input.isDown("ArrowUp")) dy -= 1;
-    if (input.isDown("ArrowDown")) dy += 1;
-
-    if (dx !== 0 || dy !== 0) {
-      const length = Math.hypot(dx, dy);
-      dx /= length;
-      dy /= length;
-
-      this.x += dx * this.speed * dt;
-      this.y += dy * this.speed * dt;
-      this.facingX = dx;
-      this.facingY = dy;
+    if (!input.locked) {
+      if (input.isDown("KeyQ")) this.yaw += 1.3 * dt;
+      if (input.isDown("KeyE")) this.yaw -= 1.3 * dt;
     }
 
-    this.x = Math.max(bounds.left + this.radius, Math.min(bounds.right - this.radius, this.x));
-    this.y = Math.max(bounds.top + this.radius, Math.min(bounds.bottom - this.radius, this.y));
+    let dx = 0;
+    let dz = 0;
+    if (input.movingForward()) dz -= 1;
+    if (input.movingBack()) dz += 1;
+    if (input.movingLeft()) dx -= 1;
+    if (input.movingRight()) dx += 1;
+
+    const tryingToMove = dx !== 0 || dz !== 0;
+    const sprint = tryingToMove && input.sprinting() && this.stamina > 1;
+    const speed = sprint ? this.sprintSpeed : this.walkSpeed;
+
+    if (tryingToMove) {
+      const length = Math.hypot(dx, dz);
+      dx /= length;
+      dz /= length;
+
+      const sin = Math.sin(this.yaw);
+      const cos = Math.cos(this.yaw);
+      const worldX = dx * cos + dz * sin;
+      const worldZ = dz * cos - dx * sin;
+      const nextX = this.x + worldX * speed * dt;
+      const nextZ = this.z + worldZ * speed * dt;
+
+      if (!this.world.blocked(nextX, nextZ) && this.world.inBounds(nextX, nextZ)) {
+        this.x = nextX;
+        this.z = nextZ;
+      }
+
+      this.speed = speed;
+      this.bob += dt * (sprint ? 11 : 8);
+      this.stamina = Math.max(0, this.stamina - (sprint ? 18 : 4) * dt);
+    } else {
+      this.speed = 0;
+      this.stamina = Math.min(100, this.stamina + 14 * dt);
+    }
+
+    this.hunger = Math.max(8, this.hunger - 0.35 * dt);
+    this.thirst = Math.max(8, this.thirst - 0.45 * dt);
+
+    this.syncCamera();
   }
 
-  draw(ctx) {
-    ctx.save();
-
-    ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
-    ctx.beginPath();
-    ctx.ellipse(this.x, this.y + 14, 14, 6, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    const glow = ctx.createRadialGradient(this.x, this.y, 4, this.x, this.y, 28);
-    glow.addColorStop(0, "rgba(94, 234, 212, 0.35)");
-    glow.addColorStop(1, "rgba(94, 234, 212, 0)");
-    ctx.fillStyle = glow;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, 28, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = "#5eead4";
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.strokeStyle = "#134e4a";
-    ctx.lineWidth = 3;
-    ctx.stroke();
-
-    ctx.fillStyle = "rgba(255, 255, 255, 0.28)";
-    ctx.beginPath();
-    ctx.arc(this.x - 4, this.y - 5, 5, 0, Math.PI * 2);
-    ctx.fill();
-
-    const noseX = this.x + this.facingX * (this.radius + 6);
-    const noseY = this.y + this.facingY * (this.radius + 6);
-    ctx.fillStyle = "#ecfeff";
-    ctx.beginPath();
-    ctx.arc(noseX, noseY, 4, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.restore();
+  syncCamera() {
+    const ground = this.world.heightAt(this.x, this.z);
+    this.camera.position.set(this.x, ground + this.eyeHeight, this.z);
+    this.camera.rotation.order = "YXZ";
+    this.camera.rotation.y = this.yaw;
+    this.camera.rotation.x = this.pitch;
   }
 }

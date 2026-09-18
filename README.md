@@ -1,43 +1,40 @@
 # Survive
 
-A simple 2D top-down survival game for an advanced coding class.
+A first-person wilderness survival game for an advanced coding class.
 
-The repo started empty (README only), so this project uses **HTML5 Canvas and vanilla JavaScript**. That keeps setup light: no engine install, and the game runs in a browser.
+The project uses **Three.js** in the browser: a first-person camera, a forest valley, mountains, weather, and a bow in the player's hands.
 
 ## How to run
 
-Open `index.html` in a browser.
-
-If the page does not load scripts correctly from a local file, start a tiny server from this folder:
+Start a local server from this folder (needed because the game loads JavaScript modules):
 
 ```bash
 python3 -m http.server 8000
 ```
 
-Then visit [http://localhost:8000](http://localhost:8000).
+Then visit [http://localhost:8000](http://localhost:8000). Click **Enter the forest**.
 
 ## Controls
 
-- **Arrow keys** — move the player
+- **Mouse** — look around (click the game to lock the pointer)
+- **W A S D** or **arrow keys** — walk
+- **Shift** — sprint (uses stamina)
+- **Q / E** — turn if the mouse is not locked
+- **Hold left mouse** — draw the bow
 
 ## Project layout
 
 | File | What it does |
 | --- | --- |
-| `index.html` | Page layout and canvas |
-| `css/style.css` | Menu/HUD styling around the game |
-| `js/input.js` | Tracks arrow key presses |
-| `js/player.js` | Player position, movement, and drawing |
-| `js/game.js` | Game loop and arena |
+| `index.html` | Full-screen canvas and survival HUD |
+| `css/style.css` | HUD, start screen, and overlays |
 | `js/main.js` | Starts the game |
-| `assets/player.png` | Pixel-art player sprite (backpack and flashlight) |
-| `assets/monster.png` | Pixel-art monster sprite (glowing eyes) |
-| `assets/food_collection.png` | Pixel-art food item set |
-| `assets/apple.png` | Apple pickup sprite |
-| `assets/berries.png` | Berry pickup sprite |
-| `assets/canned_food.png` | Canned food pickup sprite |
-| `assets/water_bottle.png` | Water bottle pickup sprite |
+| `js/game.js` | Scene, lighting, fog, sky, and loop |
+| `js/world.js` | Terrain, trees, rocks, flowers, snow |
+| `js/player.js` | First-person movement and stats |
+| `js/viewmodel.js` | Hands, bow, and arrow |
+| `js/input.js` | Keyboard and mouse |
+| `js/hud.js` | Health, hunger, thirst, stamina meters |
+| `js/noise.js` | Height and ground variation |
 
-## Current progress
-
-This first version only includes the **game screen** and **player movement**. Later pieces (enemies, shooting, score, health, and power-ups) can be added on top of this loop.
+Pixel-art images in `assets/` are leftover concept art and are not used by this 3D scene.
