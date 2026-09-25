@@ -17,35 +17,46 @@
         <h1>Survive</h1>
         <p class="start-copy">
           Click to look around with the mouse. Walk with WASD or the arrow keys.
+          <!-- Extra control tip shown on the start card. -->
           Hold Shift to sprint.
         </p>
+        <!-- game.js listens for a click on this button, then starts the game. -->
         <button id="start-btn" type="button">Enter the forest</button>
       </div>
     </div>
 
-    <!-- In-game overlay: meters, bow draw bar, and arrow count. -->
+    <!-- In-game overlay: meters, bow draw bar, and arrow count. Hidden until you start. -->
     <div id="hud" class="hud is-hidden">
+      <!-- Tiny circle in the middle of the screen, like a crosshair. -->
       <div class="crosshair"></div>
 
       <!-- Four survival rings. --p is how full each ring is (0% to 100%). -->
       <div class="meters">
+        <!-- Stamina: goes down when you sprint, comes back when you stand still. -->
         <div class="ring" id="meter-stamina" style="--p: 100%">
           <svg viewBox="0 0 24 24" aria-label="Stamina">
+            <!-- Lightning-bolt icon. -->
             <path d="M13 3L6 14h5l-1 7 8-12h-5l1-6z" />
           </svg>
         </div>
+        <!-- Hunger: slowly goes down over time. -->
         <div class="ring" id="meter-hunger" style="--p: 86%">
           <svg viewBox="0 0 24 24" aria-label="Hunger">
+            <!-- Fork-and-knife icon. -->
             <path d="M4 3v8a3 3 0 0 0 3 3v7h2V3H7v7H6V3H4zm12 0c-2 3-2 6-2 9v9h2v-6h1c2 0 3-2 3-5V3h-2v8h-1V3h-1z" />
           </svg>
         </div>
+        <!-- Thirst: also goes down slowly over time. -->
         <div class="ring" id="meter-thirst" style="--p: 74%">
           <svg viewBox="0 0 24 24" aria-label="Thirst">
+            <!-- Water-drop icon. -->
             <path d="M12 2s6 7.2 6 12a6 6 0 1 1-12 0c0-4.8 6-12 6-12z" />
           </svg>
         </div>
+        <!-- Health: stays full for now. Later you could lower it when the player gets hurt. -->
         <div class="ring" id="meter-health" style="--p: 100%">
           <svg viewBox="0 0 24 24" aria-label="Health">
+            <!-- Heart icon. -->
             <path d="M12 21s-7.2-4.6-9.3-8.4C1 9.4 2.4 6 5.6 6c1.8 0 3.1 1 3.9 2.2C10.3 7 11.6 6 13.4 6c3.2 0 4.6 3.4 2.9 6.6C19.2 16.4 12 21 12 21z" />
           </svg>
         </div>
@@ -54,11 +65,11 @@
       <!-- Thin bar in the middle: how far the bow is pulled. -->
       <div class="draw-meter" id="draw-meter"></div>
 
-      <!-- Equipped arrows on the right. -->
+      <!-- Equipped arrows on the right. 1 is in the bow, 16 is leftover ammo. -->
       <div class="arrows"><strong>1</strong><span>16</span></div>
     </div>
 
-    <!-- Three.js is loaded from a CDN. main.js starts the game after that. -->
+    <!-- Tells the browser where to find Three.js (the 3D library). -->
     <script type="importmap">
       {
         "imports": {
