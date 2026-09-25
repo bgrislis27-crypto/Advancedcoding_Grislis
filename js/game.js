@@ -6,49 +6,55 @@ import { Player } from "./player.js";
 import { Viewmodel } from "./viewmodel.js";
 import { Hud } from "./hud.js";
 
-/**
- * Sets up the 3D scene, lighting, fog, and the main loop.
- */
+// Game is the "director". It builds the 3D scene, then runs the loop
+// that updates the player and draws each frame.
+
 export class Game {
   constructor(canvas) {
     this.canvas = canvas;
+
+    // The renderer draws the 3D scene onto the canvas.
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // don't use extra pixels on very sharp screens
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; // softer, more natural shadows
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping; // makes colors look more like a real camera
     this.renderer.toneMappingExposure = 1.12;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
-    this.scene = new THREE.Scene();
-    this.scene.fog = new THREE.Fog(0xc5d8ee, 70, 340);
+    this.scene = new THREE.Scene(); // the "box" that holds trees, lights, the player, everything
+    this.scene.fog = new THREE.Fog(0xc5d8ee, 70, 340); // far objects fade into the sky
 
+    // The camera is the player's view. 68 is the field of view in degrees.
     this.camera = new THREE.PerspectiveCamera(68, window.innerWidth / window.innerHeight, 0.08, 600);
     this.scene.add(this.camera);
 
     this.addSkyAndLights();
 
+    // Create the other game pieces and store them on "this" so the loop can use them.
     this.world = new World(this.scene);
     this.input = new Input(canvas);
     this.player = new Player(this.camera, this.world);
-    this.viewmodel = new Viewmodel(this.camera);
+    this.viewmodel = new Viewmodel(this.camera); // hands + bow
     this.hud = new Hud();
     this.lastTime = 0;
-    this.started = false;
+    this.started = false; // false until the player clicks "Enter the forest"
 
     window.addEventListener("resize", () => this.resize());
     document.getElementById("start-btn").addEventListener("click", () => this.enter());
     canvas.addEventListener("click", () => {
+      // Clicking the game again re-hides the mouse if the player pressed Esc.
       if (this.started) this.input.lock();
     });
   }
 
   addSkyAndLights() {
     const sky = new Sky();
-    sky.scale.setScalar(4500);
+    sky.scale.setScalar(4500); // huge sky dome around the whole world
     this.scene.add(sky);
 
+    // Place the sun in the sky. These numbers control how bright and blue it looks.
     const sunPos = new THREE.Vector3();
     const phi = THREE.MathUtils.degToRad(90 - 38);
     const theta = THREE.MathUtils.degToRad(175);
@@ -59,57 +65,65 @@ export class Game {
     sky.material.uniforms.mieCoefficient.value = 0.003;
     sky.material.uniforms.mieDirectionalG.value = 0.82;
 
+    // Soft light from the sky + a little extra brightness everywhere.
     this.scene.add(new THREE.HemisphereLight(0xd7ebff, 0x6a7b42, 0.7));
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.22));
 
+    // Main sunlight. This light is what makes tree shadows.
     this.sun = new THREE.DirectionalLight(0xfff3d8, 2.4);
     this.sun.castShadow = true;
-    this.sun.shadow.mapSize.set(2048, 2048);
+    this.sun.shadow.mapSize.set(2048, 2048); // higher number = sharper shadows, but slower
     this.sun.shadow.camera.near = 1;
     this.sun.shadow.camera.far = 160;
     this.sun.shadow.camera.left = -50;
     this.sun.shadow.camera.right = 50;
     this.sun.shadow.camera.top = 50;
     this.sun.shadow.camera.bottom = -50;
-    this.sun.shadow.bias = -0.0004;
+    this.sun.shadow.bias = -0.0004; // tiny offset so shadows don't flicker on the ground
     this.scene.add(this.sun);
     this.scene.add(this.sun.target);
     this.sunDirection = sunPos.clone();
   }
 
+  // Called when the player clicks "Enter the forest".
   enter() {
     this.started = true;
     this.hud.show();
     this.input.lock();
   }
 
+  // Keep the 3D view matching the browser window if it changes size.
   resize() {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
+  // Kick off the loop. requestAnimationFrame asks the browser to call us every frame.
   start() {
     this.lastTime = performance.now();
     requestAnimationFrame((time) => this.loop(time));
   }
 
   loop(time) {
+    // dt = seconds since the last frame. We cap it so a lag spike
+    // doesn't teleport the player.
     const dt = Math.min((time - this.lastTime) / 1000, 0.05);
     this.lastTime = time;
     this.update(dt);
-    this.renderer.render(this.scene, this.camera);
-    requestAnimationFrame((next) => this.loop(next));
+    this.renderer.render(this.scene, this.camera); // actually draw this frame
+    requestAnimationFrame((next) => this.loop(next)); // schedule the next frame
   }
 
   update(dt) {
     if (this.started) {
       this.player.update(dt, this.input);
       this.viewmodel.update(dt, this.player, this.input.drawing);
-      this.world.update(dt, this.player);
+      this.world.update(dt, this.player); // falling snow
       this.hud.update(this.player, this.viewmodel.draw);
     }
 
+    // Keep the sun (and its shadows) near the player as they walk.
     this.sun.position.set(
       this.player.x + this.sunDirection.x * 70,
       this.player.camera.position.y + 55,
