@@ -1,17 +1,19 @@
-/**
- * Keyboard + mouse look. Clicking the game locks the pointer so the mouse can turn the camera.
- */
+// This file watches the keyboard and mouse.
+// The rest of the game asks this file "is W held down?" instead of
+// listening to keys in many different places.
+
 export class Input {
   constructor(canvas) {
     this.canvas = canvas;
-    this.keys = new Set();
-    this.locked = false;
+    this.keys = new Set(); // every key that is currently held down
+    this.locked = false; // true after you click, so the mouse can turn the camera
     this.lookX = 0;
     this.lookY = 0;
-    this.drawing = false;
+    this.drawing = false; // true while the left mouse button is held (draw the bow)
 
     window.addEventListener("keydown", (event) => {
       this.keys.add(event.code);
+      // Stop arrow keys from scrolling the page.
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(event.code)) {
         event.preventDefault();
       }
@@ -64,6 +66,7 @@ export class Input {
     return this.isDown("ShiftLeft") || this.isDown("ShiftRight");
   }
 
+  // Read how far the mouse moved, then reset so we don't reuse old movement.
   consumeLook() {
     const look = { x: this.lookX, y: this.lookY };
     this.lookX = 0;
@@ -71,6 +74,7 @@ export class Input {
     return look;
   }
 
+  // Hide the cursor and let the mouse turn the camera.
   lock() {
     this.canvas.requestPointerLock();
   }

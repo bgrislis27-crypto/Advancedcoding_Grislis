@@ -7,8 +7,10 @@
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
+    <!-- The 3D world is drawn on this full-screen canvas. -->
     <canvas id="game" aria-label="First-person wilderness"></canvas>
 
+    <!-- Shown first. Click the button to start walking around. -->
     <div id="start" class="start">
       <div class="start-card">
         <p class="kicker">Wilderness survival</p>
@@ -21,6 +23,7 @@
       </div>
     </div>
 
+    <!-- In-game overlay: meters, bow draw bar, and arrow count. -->
     <div id="hud" class="hud is-hidden">
       <div class="crosshair"></div>
 
@@ -52,6 +55,7 @@
       <div class="arrows"><strong>1</strong><span>16</span></div>
     </div>
 
+    <!-- Three.js is loaded from a CDN. main.js starts the game after that. -->
     <script type="importmap">
       {
         "imports": {

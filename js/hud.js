@@ -1,6 +1,6 @@
-/**
- * Keeps the on-screen survival meters in sync with player stats.
- */
+// This file updates the circles on the screen (health, hunger, thirst, stamina).
+// It does not draw the 3D world. It only changes the HTML overlay.
+
 export class Hud {
   constructor() {
     this.stamina = document.getElementById("meter-stamina");
@@ -12,6 +12,7 @@ export class Hud {
     this.start = document.getElementById("start");
   }
 
+  // Hide the start menu and show the in-game meters.
   show() {
     this.start.classList.add("is-hidden");
     this.hud.classList.remove("is-hidden");

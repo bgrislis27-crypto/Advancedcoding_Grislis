@@ -1,13 +1,16 @@
-/**
- * Tiny 2D value-noise helper used to shape hills, grass, and mountain ridges.
- */
+// This file makes the random hills and bumpy ground.
+// The world uses these numbers so the terrain is not a flat rectangle.
+
 export function createNoise(seed = 1337) {
+  // Turn two grid numbers into a random-looking 0 to 1 value.
+  // The same input always gives the same output, so the hills stay still.
   function hash(ix, iy) {
     let n = ix * 374761393 + iy * 668265263 + seed * 1442695041;
     n = (n ^ (n >> 13)) * 1274126177;
     return ((n ^ (n >> 16)) >>> 0) / 4294967296;
   }
 
+  // Smooth the blend between 0 and 1 so hills don't look like sharp stairs.
   function fade(t) {
     return t * t * (3 - 2 * t);
   }
@@ -16,6 +19,7 @@ export function createNoise(seed = 1337) {
     return a + (b - a) * t;
   }
 
+  // Smooth random value at any x, y point.
   function noise2(x, y) {
     const x0 = Math.floor(x);
     const y0 = Math.floor(y);
@@ -26,6 +30,7 @@ export function createNoise(seed = 1337) {
     return lerp(a, b, fy);
   }
 
+  // Add several layers of noise together so you get both big hills and small bumps.
   function fbm(x, y, octaves = 5) {
     let value = 0;
     let amp = 0.5;
@@ -41,6 +46,7 @@ export function createNoise(seed = 1337) {
   return { noise2, fbm };
 }
 
+// Ease from 0 to 1 as x goes from edge0 to edge1. Useful for blending grass into rock.
 export function smoothstep(edge0, edge1, x) {
   const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));
   return t * t * (3 - 2 * t);

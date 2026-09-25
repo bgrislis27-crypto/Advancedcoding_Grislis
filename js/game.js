@@ -6,12 +6,14 @@ import { Player } from "./player.js";
 import { Viewmodel } from "./viewmodel.js";
 import { Hud } from "./hud.js";
 
-/**
- * Sets up the 3D scene, lighting, fog, and the main loop.
- */
+// Game is the "director". It builds the 3D scene, then runs the loop
+// that updates the player and draws each frame.
+
 export class Game {
   constructor(canvas) {
     this.canvas = canvas;
+
+    // The renderer draws the 3D scene onto the canvas.
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -22,8 +24,9 @@ export class Game {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     this.scene = new THREE.Scene();
-    this.scene.fog = new THREE.Fog(0xc5d8ee, 70, 340);
+    this.scene.fog = new THREE.Fog(0xc5d8ee, 70, 340); // far objects fade into the sky
 
+    // The camera is the player's view. 68 is the field of view in degrees.
     this.camera = new THREE.PerspectiveCamera(68, window.innerWidth / window.innerHeight, 0.08, 600);
     this.scene.add(this.camera);
 
@@ -35,7 +38,7 @@ export class Game {
     this.viewmodel = new Viewmodel(this.camera);
     this.hud = new Hud();
     this.lastTime = 0;
-    this.started = false;
+    this.started = false; // false until the player clicks "Enter the forest"
 
     window.addEventListener("resize", () => this.resize());
     document.getElementById("start-btn").addEventListener("click", () => this.enter());
@@ -49,6 +52,7 @@ export class Game {
     sky.scale.setScalar(4500);
     this.scene.add(sky);
 
+    // Place the sun in the sky. These numbers control how bright and blue it looks.
     const sunPos = new THREE.Vector3();
     const phi = THREE.MathUtils.degToRad(90 - 38);
     const theta = THREE.MathUtils.degToRad(175);
@@ -59,9 +63,11 @@ export class Game {
     sky.material.uniforms.mieCoefficient.value = 0.003;
     sky.material.uniforms.mieDirectionalG.value = 0.82;
 
+    // Soft light from the sky + a little extra brightness everywhere.
     this.scene.add(new THREE.HemisphereLight(0xd7ebff, 0x6a7b42, 0.7));
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.22));
 
+    // Main sunlight. This light is what makes tree shadows.
     this.sun = new THREE.DirectionalLight(0xfff3d8, 2.4);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(2048, 2048);
@@ -95,6 +101,8 @@ export class Game {
   }
 
   loop(time) {
+    // dt = seconds since the last frame. We cap it so a lag spike
+    // doesn't teleport the player.
     const dt = Math.min((time - this.lastTime) / 1000, 0.05);
     this.lastTime = time;
     this.update(dt);
@@ -110,6 +118,7 @@ export class Game {
       this.hud.update(this.player, this.viewmodel.draw);
     }
 
+    // Keep the sun (and its shadows) near the player as they walk.
     this.sun.position.set(
       this.player.x + this.sunDirection.x * 70,
       this.player.camera.position.y + 55,
