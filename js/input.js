@@ -7,7 +7,7 @@ export class Input {
     this.canvas = canvas;
     this.keys = new Set(); // every key that is currently held down
     this.locked = false; // true after you click, so the mouse can turn the camera
-    this.lookX = 0;
+    this.lookX = 0; // leftover mouse movement, used once then reset
     this.lookY = 0;
     this.drawing = false; // true while the left mouse button is held (draw the bow)
 
@@ -20,11 +20,11 @@ export class Input {
     });
 
     window.addEventListener("keyup", (event) => {
-      this.keys.delete(event.code);
+      this.keys.delete(event.code); // the key is no longer held
     });
 
     canvas.addEventListener("mousedown", (event) => {
-      if (event.button === 0) this.drawing = true;
+      if (event.button === 0) this.drawing = true; // 0 = left mouse button
     });
 
     window.addEventListener("mouseup", (event) => {
@@ -32,12 +32,13 @@ export class Input {
     });
 
     document.addEventListener("mousemove", (event) => {
-      if (!this.locked) return;
+      if (!this.locked) return; // ignore mouse look until the cursor is hidden
       this.lookX += event.movementX;
       this.lookY += event.movementY;
     });
 
     document.addEventListener("pointerlockchange", () => {
+      // Esc unlocks the mouse. This keeps our flag in sync with the browser.
       this.locked = document.pointerLockElement === canvas;
     });
   }
@@ -46,6 +47,7 @@ export class Input {
     return this.keys.has(code);
   }
 
+  // These helpers let the player use WASD or the arrow keys.
   movingForward() {
     return this.isDown("KeyW") || this.isDown("ArrowUp");
   }

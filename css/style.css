@@ -9,7 +9,7 @@ body {
   margin: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden;
+  overflow: hidden; /* no page scroll; the game fills the window */
   background: #8aa4b8;
   font-family: "Segoe UI", "Trebuchet MS", sans-serif;
   color: #f4f7fa;
@@ -21,9 +21,10 @@ body {
   height: 100%;
 }
 
+/* Dark overlay that sits on top of the 3D world until you click play. */
 .start {
   position: absolute;
-  inset: 0;
+  inset: 0; /* top, right, bottom, left all 0 = cover the whole screen */
   display: grid;
   place-items: center;
   background: linear-gradient(180deg, rgba(10, 16, 22, 0.28), rgba(10, 16, 22, 0.55));
@@ -82,7 +83,7 @@ button {
 .hud {
   position: absolute;
   inset: 0;
-  pointer-events: none;
+  pointer-events: none; /* clicks go through the HUD into the game */
   z-index: 4;
 }
 
@@ -94,9 +95,10 @@ button {
   height: 8px;
   border: 1px solid rgba(255, 255, 255, 0.7);
   border-radius: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%); /* center the tiny circle */
 }
 
+/* Stack of survival rings in the bottom-left corner. */
 .meters {
   position: absolute;
   left: 28px;
@@ -121,6 +123,7 @@ button {
   position: absolute;
   inset: 0;
   border-radius: 50%;
+  /* --p comes from JavaScript. White = filled, faded = empty. */
   background: conic-gradient(rgba(255, 255, 255, 0.95) var(--p), rgba(255, 255, 255, 0.16) 0);
   mask: radial-gradient(farthest-side, transparent 62%, #000 63%);
 }

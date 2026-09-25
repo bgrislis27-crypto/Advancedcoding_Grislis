@@ -16,15 +16,16 @@ export function createNoise(seed = 1337) {
   }
 
   function lerp(a, b, t) {
-    return a + (b - a) * t;
+    return a + (b - a) * t; // mix a and b. t=0 is a, t=1 is b
   }
 
   // Smooth random value at any x, y point.
   function noise2(x, y) {
     const x0 = Math.floor(x);
     const y0 = Math.floor(y);
-    const fx = fade(x - x0);
+    const fx = fade(x - x0); // how far we are between the left and right grid lines
     const fy = fade(y - y0);
+    // Blend the 4 nearest grid corners.
     const a = lerp(hash(x0, y0), hash(x0 + 1, y0), fx);
     const b = lerp(hash(x0, y0 + 1), hash(x0 + 1, y0 + 1), fx);
     return lerp(a, b, fy);
@@ -33,12 +34,12 @@ export function createNoise(seed = 1337) {
   // Add several layers of noise together so you get both big hills and small bumps.
   function fbm(x, y, octaves = 5) {
     let value = 0;
-    let amp = 0.5;
-    let freq = 1;
+    let amp = 0.5; // how strong this layer is
+    let freq = 1; // how stretched this layer is
     for (let i = 0; i < octaves; i++) {
       value += amp * noise2(x * freq, y * freq);
-      freq *= 2;
-      amp *= 0.5;
+      freq *= 2; // next layer is more detailed
+      amp *= 0.5; // next layer is weaker
     }
     return value;
   }

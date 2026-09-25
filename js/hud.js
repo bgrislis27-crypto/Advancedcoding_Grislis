@@ -3,6 +3,7 @@
 
 export class Hud {
   constructor() {
+    // Save the HTML elements so we can change them every frame.
     this.stamina = document.getElementById("meter-stamina");
     this.hunger = document.getElementById("meter-hunger");
     this.thirst = document.getElementById("meter-thirst");
@@ -19,10 +20,12 @@ export class Hud {
   }
 
   update(player, drawAmount) {
+    // CSS uses --p as a percent, like 80%, to fill each ring.
     this.stamina.style.setProperty("--p", `${player.stamina}%`);
     this.hunger.style.setProperty("--p", `${player.hunger}%`);
     this.thirst.style.setProperty("--p", `${player.thirst}%`);
     this.health.style.setProperty("--p", `${player.health}%`);
+    // The thin bar at the bottom of the screen shows how far the bow is drawn.
     this.draw.style.setProperty("--draw", `${Math.round(drawAmount * 100)}%`);
   }
 }

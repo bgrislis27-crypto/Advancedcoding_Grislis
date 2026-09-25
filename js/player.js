@@ -13,9 +13,10 @@ export class Player {
     this.pitch = -0.04; // up / down look
     this.eyeHeight = 1.7;
 
-    this.walkSpeed = 6.2;
+    this.walkSpeed = 6.2; // units per second
     this.sprintSpeed = 10.5;
 
+    // These numbers are shown on the HUD circles (0 to 100).
     this.stamina = 100;
     this.health = 100;
     this.hunger = 86;
@@ -49,7 +50,7 @@ export class Player {
     if (input.movingRight()) dx += 1;
 
     const tryingToMove = dx !== 0 || dz !== 0;
-    const sprint = tryingToMove && input.sprinting() && this.stamina > 1;
+    const sprint = tryingToMove && input.sprinting() && this.stamina > 1; // Shift + moving, and still have stamina
     const speed = sprint ? this.sprintSpeed : this.walkSpeed;
 
     if (tryingToMove) {
@@ -73,8 +74,8 @@ export class Player {
       }
 
       this.speed = speed;
-      this.bob += dt * (sprint ? 11 : 8);
-      this.stamina = Math.max(0, this.stamina - (sprint ? 18 : 4) * dt);
+      this.bob += dt * (sprint ? 11 : 8); // faster bob when sprinting
+      this.stamina = Math.max(0, this.stamina - (sprint ? 18 : 4) * dt); // sprint uses stamina faster
     } else {
       this.speed = 0;
       this.stamina = Math.min(100, this.stamina + 14 * dt); // stamina comes back while standing
@@ -91,7 +92,7 @@ export class Player {
   syncCamera() {
     const ground = this.world.heightAt(this.x, this.z);
     this.camera.position.set(this.x, ground + this.eyeHeight, this.z);
-    this.camera.rotation.order = "YXZ";
+    this.camera.rotation.order = "YXZ"; // turn left/right first, then look up/down
     this.camera.rotation.y = this.yaw;
     this.camera.rotation.x = this.pitch;
   }

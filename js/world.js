@@ -7,11 +7,12 @@ import { createNoise, smoothstep } from "./noise.js";
 export class World {
   constructor(scene) {
     this.scene = scene;
-    this.noise = createNoise(904);
+    this.noise = createNoise(904); // same seed every time, so the map stays the same
     this.treeSpots = []; // saved so the player can bump into trunks
     this.snow = null;
     this.snowPositions = null;
 
+    // Build the world in layers, from the ground up.
     this.addTerrain();
     this.addMountains();
     this.addClouds();
@@ -23,15 +24,16 @@ export class World {
 
   // How high the ground is at a point. Center is a meadow, edges rise into mountains.
   heightAt(x, z) {
-    const d = Math.hypot(x, z);
-    const n1 = this.noise.fbm(x * 0.007, z * 0.007, 5);
-    const n2 = this.noise.fbm(x * 0.028 + 40, z * 0.028, 3);
-    const meadow = 1 - smoothstep(18, 62, d);
+    const d = Math.hypot(x, z); // distance from the middle of the map
+    const n1 = this.noise.fbm(x * 0.007, z * 0.007, 5); // big rolling hills
+    const n2 = this.noise.fbm(x * 0.028 + 40, z * 0.028, 3); // smaller bumps
+    const meadow = 1 - smoothstep(18, 62, d); // 1 in the center, 0 farther out
     const mountain = Math.pow(smoothstep(68, 175, d), 1.28) * (48 + n1 * 34);
     const hills = n1 * 6.5 + n2 * 2.2;
     return meadow * (0.6 + hills * 0.2) + (1 - meadow) * (hills + 1.5) + mountain;
   }
 
+  // Stay inside a circle so you don't walk off the edge of the terrain.
   inBounds(x, z) {
     return Math.hypot(x, z) < 132;
   }
@@ -45,8 +47,8 @@ export class World {
   }
 
   addTerrain() {
-    const size = 420;
-    const segs = 175;
+    const size = 420; // how wide the ground is
+    const segs = 175; // more segments = smoother hills
     const geometry = new THREE.PlaneGeometry(size, size, segs, segs);
     geometry.rotateX(-Math.PI / 2); // lay the flat plane down like a floor
 
@@ -68,12 +70,12 @@ export class World {
       const d = Math.hypot(x, z);
       const flower = this.noise.noise2(x * 0.12, z * 0.12);
       const color = new THREE.Color();
-      if (y > 38) color.copy(snow);
-      else if (y > 26) color.lerpColors(rock, snow, smoothstep(26, 40, y));
+      if (y > 38) color.copy(snow); // high ground is white
+      else if (y > 26) color.lerpColors(rock, snow, smoothstep(26, 40, y)); // mix rock into snow
       else if (d < 55) {
-        color.lerpColors(grass, bright, flower);
-        if (flower > 0.62) color.lerp(new THREE.Color(0xd7c34a), 0.35);
-      } else color.lerpColors(dry, rock, smoothstep(18, 34, y));
+        color.lerpColors(grass, bright, flower); // meadow
+        if (flower > 0.62) color.lerp(new THREE.Color(0xd7c34a), 0.35); // extra yellow patches
+      } else color.lerpColors(dry, rock, smoothstep(18, 34, y)); // slopes farther out
 
       colors[i * 3] = color.r;
       colors[i * 3 + 1] = color.g;
@@ -81,17 +83,17 @@ export class World {
     }
 
     geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-    geometry.computeVertexNormals();
+    geometry.computeVertexNormals(); // needed so lighting looks right on hills
 
     const mesh = new THREE.Mesh(
       geometry,
       new THREE.MeshStandardMaterial({
-        vertexColors: true,
+        vertexColors: true, // use the colors we just stored
         roughness: 0.95,
         metalness: 0,
       })
     );
-    mesh.receiveShadow = true;
+    mesh.receiveShadow = true; // trees can cast shadows onto the grass
     this.scene.add(mesh);
   }
 
@@ -99,6 +101,7 @@ export class World {
     const rock = new THREE.Color(0x8d9094);
     const snow = new THREE.Color(0xf4f7fb);
     for (let i = 0; i < 18; i++) {
+      // Spread peaks in a ring in front of the starting view.
       const angle = -Math.PI * 0.72 + (i / 17) * Math.PI * 1.44;
       const dist = 148 + (i % 4) * 10;
       const x = Math.sin(angle) * dist;
@@ -177,14 +180,14 @@ export class World {
       const d = Math.hypot(x, z);
       if (d < 22 || d > 138) continue; // keep the spawn meadow open
       if (z < 8 && Math.abs(x) < 14 && d < 90) continue; // leave a path toward the mountains
-      if (this.treeSpots.some((t) => Math.hypot(t.x - x, t.z - z) < 4.2)) continue;
+      if (this.treeSpots.some((t) => Math.hypot(t.x - x, t.z - z) < 4.2)) continue; // don't stack trees on top of each other
 
-      const scale = 1.3 + Math.random() * 1.7;
+      const scale = 1.3 + Math.random() * 1.7; // random tree height
       dummy.position.set(x, this.heightAt(x, z), z);
-      dummy.rotation.set(0, Math.random() * Math.PI * 2, 0);
+      dummy.rotation.set(0, Math.random() * Math.PI * 2, 0); // spin so they don't all face the same way
       dummy.scale.setScalar(scale);
       dummy.updateMatrix();
-      mesh.setMatrixAt(placed, dummy.matrix);
+      mesh.setMatrixAt(placed, dummy.matrix); // copy this tree's pose into the big group
       this.treeSpots.push({ x, z, radius: 0.9 * scale });
       placed += 1;
     }
@@ -211,7 +214,7 @@ export class World {
   }
 
   addRocks() {
-    const geo = new THREE.IcosahedronGeometry(1, 1);
+    const geo = new THREE.IcosahedronGeometry(1, 1); // bumpy round rock shape
     const material = new THREE.MeshStandardMaterial({
       color: 0x8b8d86,
       roughness: 0.95,
@@ -233,6 +236,7 @@ export class World {
     }
     this.scene.add(mesh);
 
+    // One large rock wall off to the side, like a cliff.
     const cliff = new THREE.Mesh(
       new THREE.BoxGeometry(18, 14, 10),
       new THREE.MeshStandardMaterial({ color: 0x6f736c, roughness: 1, flatShading: true })
@@ -245,6 +249,7 @@ export class World {
   }
 
   addMeadow() {
+    // Yellow top + green stem, glued into one flower shape.
     const flowerGeo = mergeGeometries([
       colored(new THREE.SphereGeometry(0.07, 6, 6), new THREE.Color(0xe6c14a)),
       colored(new THREE.CylinderGeometry(0.012, 0.016, 0.18, 4).translate(0, -0.12, 0), new THREE.Color(0x3f7a28)),
@@ -266,6 +271,7 @@ export class World {
     }
     this.scene.add(flowers);
 
+    // Little grass tufts scattered around the meadow.
     const grassGeo = colored(new THREE.ConeGeometry(0.05, 0.28, 4), new THREE.Color(0x3c6b28));
     const grass = new THREE.InstancedMesh(
       grassGeo,
@@ -333,6 +339,7 @@ export class World {
       pos[i + 1] -= dt * (1.4 + (i % 5) * 0.15); // fall down
       pos[i] += dt * 0.35; // light wind
       if (pos[i + 1] < -2) {
+        // Flake fell past the camera, so send it back up to fall again.
         pos[i] = (Math.random() - 0.5) * 40;
         pos[i + 1] = 16;
         pos[i + 2] = (Math.random() - 0.5) * 40;
@@ -359,17 +366,18 @@ function colored(geometry, color) {
 function createPineGeometry() {
   const parts = [];
   const trunk = new THREE.CylinderGeometry(0.11, 0.2, 7.4, 7);
-  trunk.translate(0, 3.7, 0);
+  trunk.translate(0, 3.7, 0); // sit the trunk on the ground
   parts.push(colored(trunk, new THREE.Color(0x5b3b24)));
 
   const greens = [0x1e3f22, 0x27542a, 0x1b3a20, 0x234b26, 0x16341b, 0x1a3c1f, 0x214826];
   for (let i = 0; i < 7; i++) {
+    // Each cone is a little smaller and higher than the one below it.
     const cone = new THREE.ConeGeometry(1.55 - i * 0.18, 2.35, 9);
     cone.translate(0, 4.1 + i * 1.05, 0);
     parts.push(colored(cone, new THREE.Color(greens[i])));
   }
 
-  const merged = mergeGeometries(parts, false);
+  const merged = mergeGeometries(parts, false); // one mesh instead of 8 separate pieces
   merged.computeVertexNormals();
   return merged;
 }
