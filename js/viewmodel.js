@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { createSkinTexture, createWoodTexture } from "./textures.js";
 
 // This file builds what you see in your hands: arms, a wooden bow, and an arrow.
 // It is attached to the camera so it stays on the screen while you look around.
@@ -15,12 +16,13 @@ export class Viewmodel {
   build() {
     // Simple colored materials. roughness = how shiny (0 shiny, 1 dull).
     const skin = new THREE.MeshStandardMaterial({
+      map: createSkinTexture(),
       color: 0xe0b089,
       roughness: 0.55,
       metalness: 0.02,
     });
     const wood = new THREE.MeshStandardMaterial({
-      color: 0xe4d2ae,
+      map: createWoodTexture(),
       roughness: 0.72,
       metalness: 0.04,
     });
