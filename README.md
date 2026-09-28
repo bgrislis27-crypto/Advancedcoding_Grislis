@@ -52,6 +52,7 @@ Start with `index.html`, then `js/main.js`. Comments in each file explain what t
 | `js/input.js` | Keyboard and mouse |
 | `js/hud.js` | Updates the on-screen meters |
 | `js/noise.js` | Random-looking hills so the ground is not flat |
+| `js/textures.js` | Painted grass, bark, rock, wood, and skin pictures |
 
 ## Extra images
 

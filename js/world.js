@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { createNoise, smoothstep } from "./noise.js";
+import { createBarkTexture, createGroundDetail, createNeedleDetail, createRockDetail } from "./textures.js";
 
 // This file builds the outdoor world: ground, trees, rocks, flowers, mountains, and snow.
 
@@ -88,8 +89,9 @@ export class World {
     const mesh = new THREE.Mesh(
       geometry,
       new THREE.MeshStandardMaterial({
+        map: createGroundDetail(), // tiny blades and specks over the ground colors
         vertexColors: true, // use the colors we just stored
-        roughness: 0.95,
+        roughness: 0.92,
         metalness: 0,
       })
     );
@@ -106,7 +108,7 @@ export class World {
       const dist = 148 + (i % 4) * 10;
       const x = Math.sin(angle) * dist;
       const z = -Math.abs(Math.cos(angle)) * dist - 10;
-      const peak = new THREE.ConeGeometry(16 + (i % 5) * 3.5, 48 + (i % 6) * 8, 6);
+      const peak = new THREE.ConeGeometry(16 + (i % 5) * 3.5, 48 + (i % 6) * 8, 10);
       const colors = new Float32Array(peak.attributes.position.count * 3);
       for (let v = 0; v < peak.attributes.position.count; v++) {
         const y = peak.attributes.position.getY(v);
@@ -119,7 +121,11 @@ export class World {
       peak.setAttribute("color", new THREE.BufferAttribute(colors, 3));
       const mesh = new THREE.Mesh(
         peak,
-        new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.96, flatShading: true })
+        new THREE.MeshStandardMaterial({
+          map: createRockDetail(),
+          vertexColors: true,
+          roughness: 0.94,
+        })
       );
       mesh.position.set(x, this.heightAt(x, z) + 10, z);
       mesh.rotation.y = Math.random() * Math.PI;
@@ -157,18 +163,29 @@ export class World {
   }
 
   addForest() {
-    const pine = createPineGeometry();
-    const material = new THREE.MeshStandardMaterial({
+    const foliage = createFoliageGeometry();
+    const trunk = createTrunkGeometry();
+    // Leaves and bark are separate so each one can have its own texture.
+    const leafMaterial = new THREE.MeshStandardMaterial({
+      map: createNeedleDetail(),
       vertexColors: true,
-      roughness: 0.86,
+      roughness: 0.88,
+      metalness: 0,
+    });
+    const barkMaterial = new THREE.MeshStandardMaterial({
+      map: createBarkTexture(),
+      roughness: 0.95,
       metalness: 0,
     });
 
     // One tree model, drawn many times. That is much faster than 240 separate trees.
     const count = 240;
-    const mesh = new THREE.InstancedMesh(pine, material, count);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
+    const leaves = new THREE.InstancedMesh(foliage, leafMaterial, count);
+    const trunks = new THREE.InstancedMesh(trunk, barkMaterial, count);
+    leaves.castShadow = true;
+    leaves.receiveShadow = true;
+    trunks.castShadow = true;
+    trunks.receiveShadow = true;
     const dummy = new THREE.Object3D();
     let placed = 0;
     let attempts = 0;
@@ -187,13 +204,15 @@ export class World {
       dummy.rotation.set(0, Math.random() * Math.PI * 2, 0); // spin so they don't all face the same way
       dummy.scale.setScalar(scale);
       dummy.updateMatrix();
-      mesh.setMatrixAt(placed, dummy.matrix); // copy this tree's pose into the big group
+      leaves.setMatrixAt(placed, dummy.matrix); // copy this tree's pose into the big group
+      trunks.setMatrixAt(placed, dummy.matrix);
       this.treeSpots.push({ x, z, radius: 0.9 * scale });
       placed += 1;
     }
 
-    mesh.count = placed;
-    this.scene.add(mesh);
+    leaves.count = placed;
+    trunks.count = placed;
+    this.scene.add(leaves, trunks);
 
     // A few extra-large trees near the starting view.
     const heroPositions = [
@@ -203,22 +222,27 @@ export class World {
       [22, -18, 2.2],
     ];
     for (const [x, z, scale] of heroPositions) {
-      const tree = new THREE.Mesh(pine, material);
-      tree.position.set(x, this.heightAt(x, z), z);
-      tree.scale.setScalar(scale);
-      tree.castShadow = true;
-      tree.receiveShadow = true;
-      this.scene.add(tree);
+      const treeLeaves = new THREE.Mesh(foliage, leafMaterial);
+      const treeTrunk = new THREE.Mesh(trunk, barkMaterial);
+      treeLeaves.position.set(x, this.heightAt(x, z), z);
+      treeTrunk.position.copy(treeLeaves.position);
+      treeLeaves.scale.setScalar(scale);
+      treeTrunk.scale.setScalar(scale);
+      treeLeaves.castShadow = true;
+      treeTrunk.castShadow = true;
+      treeLeaves.receiveShadow = true;
+      treeTrunk.receiveShadow = true;
+      this.scene.add(treeLeaves, treeTrunk);
       this.treeSpots.push({ x, z, radius: 1.1 * scale });
     }
   }
 
   addRocks() {
-    const geo = new THREE.IcosahedronGeometry(1, 1); // bumpy round rock shape
+    const geo = new THREE.IcosahedronGeometry(1, 2); // rounder rock than a simple low-poly blob
     const material = new THREE.MeshStandardMaterial({
-      color: 0x8b8d86,
-      roughness: 0.95,
-      flatShading: true,
+      map: createRockDetail(),
+      color: 0x9a9c96,
+      roughness: 0.94,
     });
     const dummy = new THREE.Object3D();
     const mesh = new THREE.InstancedMesh(geo, material, 90);
@@ -362,22 +386,36 @@ function colored(geometry, color) {
   return geometry;
 }
 
-// One pine tree: a brown trunk plus stacked green cones.
-function createPineGeometry() {
-  const parts = [];
-  const trunk = new THREE.CylinderGeometry(0.11, 0.2, 7.4, 7);
-  trunk.translate(0, 3.7, 0); // sit the trunk on the ground
-  parts.push(colored(trunk, new THREE.Color(0x5b3b24)));
+// Brown trunk. Kept separate from the leaves so it can use a bark picture.
+function createTrunkGeometry() {
+  const trunk = new THREE.CylinderGeometry(0.11, 0.22, 7.2, 8);
+  trunk.translate(0, 3.6, 0); // sit the trunk on the ground
+  return trunk;
+}
 
-  const greens = [0x1e3f22, 0x27542a, 0x1b3a20, 0x234b26, 0x16341b, 0x1a3c1f, 0x214826];
-  for (let i = 0; i < 7; i++) {
-    // Each cone is a little smaller and higher than the one below it.
-    const cone = new THREE.ConeGeometry(1.55 - i * 0.18, 2.35, 9);
-    cone.translate(0, 4.1 + i * 1.05, 0);
-    parts.push(colored(cone, new THREE.Color(greens[i])));
+// Fuller pine: many overlapping cones, plus a few side tufts.
+function createFoliageGeometry() {
+  const parts = [];
+  const layers = 9;
+
+  for (let i = 0; i < layers; i++) {
+    const t = i / (layers - 1);
+    const radius = 1.9 * (1 - t * 0.78);
+    const cone = new THREE.ConeGeometry(radius, 2.15, 8);
+    // Nudge each layer so the tree is not a perfect stack.
+    cone.translate(i % 2 === 0 ? 0.1 : -0.08, 3.5 + i * 0.92, i % 3 === 0 ? 0.06 : -0.05);
+    const green = new THREE.Color().setHSL(0.28, 0.42, 0.14 + (1 - t) * 0.1);
+    parts.push(colored(cone, green));
   }
 
-  const merged = mergeGeometries(parts, false); // one mesh instead of 8 separate pieces
+  for (let i = 0; i < 5; i++) {
+    const tuft = new THREE.ConeGeometry(0.48, 1.25, 6);
+    const angle = (i / 5) * Math.PI * 2;
+    tuft.translate(Math.cos(angle) * 0.75, 5.4 + i * 0.55, Math.sin(angle) * 0.75);
+    parts.push(colored(tuft, new THREE.Color().setHSL(0.3, 0.38, 0.2)));
+  }
+
+  const merged = mergeGeometries(parts, false);
   merged.computeVertexNormals();
   return merged;
 }

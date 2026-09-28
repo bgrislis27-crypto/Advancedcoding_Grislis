@@ -20,7 +20,7 @@ export class Game {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; // softer, more natural shadows
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping; // makes colors look more like a real camera
-    this.renderer.toneMappingExposure = 1.12;
+    this.renderer.toneMappingExposure = 1.02;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     this.scene = new THREE.Scene(); // the "box" that holds trees, lights, the player, everything
@@ -66,13 +66,13 @@ export class Game {
     sky.material.uniforms.mieDirectionalG.value = 0.82;
 
     // Soft light from the sky + a little extra brightness everywhere.
-    this.scene.add(new THREE.HemisphereLight(0xd7ebff, 0x6a7b42, 0.7));
-    this.scene.add(new THREE.AmbientLight(0xffffff, 0.22));
+    this.scene.add(new THREE.HemisphereLight(0xd7ebff, 0x6a7b42, 0.48));
+    this.scene.add(new THREE.AmbientLight(0xffffff, 0.12));
 
     // Main sunlight. This light is what makes tree shadows.
     this.sun = new THREE.DirectionalLight(0xfff3d8, 2.4);
     this.sun.castShadow = true;
-    this.sun.shadow.mapSize.set(2048, 2048); // higher number = sharper shadows, but slower
+    this.sun.shadow.mapSize.set(4096, 4096); // higher number = sharper shadows, but slower
     this.sun.shadow.camera.near = 1;
     this.sun.shadow.camera.far = 160;
     this.sun.shadow.camera.left = -50;
