@@ -1,98 +1,145 @@
-// This file is the player: where you are, how you look around, and your survival stats.
-// The camera is your eyes, so moving this class is what walks you through the forest.
+// First-person movement. WASD walks, Shift runs, E hides or uses the exit.
+
+import { neighbors } from "./maze.js";
 
 export class Player {
   constructor(camera, world) {
     this.camera = camera;
     this.world = world;
-
-    // Start in the open meadow, looking toward the mountains.
-    this.x = 0;
-    this.z = 24;
-    this.yaw = 0; // left / right look
-    this.pitch = -0.04; // up / down look
-    this.eyeHeight = 1.7;
-
-    this.walkSpeed = 6.2; // units per second
-    this.sprintSpeed = 10.5;
-
-    // These numbers are shown on the HUD circles (0 to 100).
+    const start = world.centerOf(world.level.start.c, world.level.start.r);
+    this.x = start.x;
+    this.z = start.z;
+    this.yaw = this.yawTowardHall();
+    this.pitch = -0.08;
+    this.eye = 1.65;
+    this.walkSpeed = 3.3;
+    this.runSpeed = 6.1;
     this.stamina = 100;
-    this.health = 100;
-    this.hunger = 86;
-    this.thirst = 74;
-
-    this.bob = 0; // used to bounce the bow a little while walking
-    this.speed = 0;
-
+    this.hiding = false;
+    this.moving = false;
+    this.running = false;
+    this.escaped = false;
+    this.prompt = "";
     this.syncCamera();
+  }
+
+  // Face the long starting hallway so the first view shows the corridor.
+  yawTowardHall() {
+    const facing = this.world.level.facing;
+    if (facing) return Math.atan2(-facing.dc, -facing.dr);
+
+    const start = this.world.level.start;
+    const open = neighbors(this.world.level, start.c, start.r);
+    if (open.length === 0) return 0;
+
+    let best = open[0];
+    let bestLen = -1;
+    for (const cell of open) {
+      const stepC = cell.c - start.c;
+      const stepR = cell.r - start.r;
+      let len = 1;
+      let c = cell.c;
+      let r = cell.r;
+      const floor = this.world.level.floor;
+      while (floor[r + stepR] && floor[r + stepR][c + stepC]) {
+        len += 1;
+        c += stepC;
+        r += stepR;
+      }
+      if (len > bestLen) {
+        bestLen = len;
+        best = cell;
+      }
+    }
+
+    const dx = best.c - start.c;
+    const dz = best.r - start.r;
+    return Math.atan2(-dx, -dz);
   }
 
   update(dt, input) {
-    // Turn the camera with the mouse.
     const look = input.consumeLook();
     this.yaw -= look.x * 0.0022;
-    this.pitch -= look.y * 0.0022;
-    this.pitch = Math.max(-1.35, Math.min(1.35, this.pitch)); // don't flip the camera upside down
+    this.pitch -= look.y * 0.002;
+    this.pitch = Math.max(-1.2, Math.min(1.2, this.pitch));
 
-    // Q and E turn you if the mouse is not locked yet.
     if (!input.locked) {
-      if (input.isDown("KeyQ")) this.yaw += 1.3 * dt;
-      if (input.isDown("KeyE")) this.yaw -= 1.3 * dt;
+      if (input.isDown("ArrowLeft")) this.yaw += 1.6 * dt;
+      if (input.isDown("ArrowRight")) this.yaw -= 1.6 * dt;
     }
 
-    // Build a movement direction from WASD / arrow keys.
-    let dx = 0;
-    let dz = 0;
-    if (input.movingForward()) dz -= 1;
-    if (input.movingBack()) dz += 1;
-    if (input.movingLeft()) dx -= 1;
-    if (input.movingRight()) dx += 1;
+    const pressedE = input.consumePress("KeyE");
+    if (pressedE && this.world.isExit(this.x, this.z) && !this.hiding) {
+      this.escaped = true;
+    } else if (pressedE && this.world.isHide(this.x, this.z)) {
+      this.hiding = !this.hiding;
+    } else if (pressedE && this.hiding) {
+      this.hiding = false;
+    }
 
-    const tryingToMove = dx !== 0 || dz !== 0;
-    const sprint = tryingToMove && input.sprinting() && this.stamina > 1; // Shift + moving, and still have stamina
-    const speed = sprint ? this.sprintSpeed : this.walkSpeed;
+    this.moving = false;
+    this.running = false;
 
-    if (tryingToMove) {
-      // Keep diagonal movement the same speed as walking straight.
-      const length = Math.hypot(dx, dz);
-      dx /= length;
-      dz /= length;
+    if (!this.hiding) {
+      let dx = 0;
+      let dz = 0;
+      if (input.movingForward()) dz -= 1;
+      if (input.movingBack()) dz += 1;
+      if (input.movingLeft()) dx -= 1;
+      if (input.movingRight()) dx += 1;
 
-      // Rotate that direction so forward is the way the camera is facing.
-      const sin = Math.sin(this.yaw);
-      const cos = Math.cos(this.yaw);
-      const worldX = dx * cos + dz * sin;
-      const worldZ = dz * cos - dx * sin;
-      const nextX = this.x + worldX * speed * dt;
-      const nextZ = this.z + worldZ * speed * dt;
+      const trying = dx !== 0 || dz !== 0;
+      const sprint = trying && input.running() && this.stamina > 1;
+      const speed = sprint ? this.runSpeed : this.walkSpeed;
 
-      // Only move if the next spot is inside the map and not inside a tree.
-      if (!this.world.blocked(nextX, nextZ) && this.world.inBounds(nextX, nextZ)) {
-        this.x = nextX;
-        this.z = nextZ;
+      if (trying) {
+        const length = Math.hypot(dx, dz);
+        dx /= length;
+        dz /= length;
+        const sin = Math.sin(this.yaw);
+        const cos = Math.cos(this.yaw);
+        const worldX = dx * cos + dz * sin;
+        const worldZ = dz * cos - dx * sin;
+        this.tryMove(worldX * speed * dt, worldZ * speed * dt);
+        this.moving = true;
+        this.running = sprint;
+        this.stamina = Math.max(0, this.stamina - (sprint ? 28 : 6) * dt);
+      } else {
+        this.stamina = Math.min(100, this.stamina + 16 * dt);
       }
-
-      this.speed = speed;
-      this.bob += dt * (sprint ? 11 : 8); // faster bob when sprinting
-      this.stamina = Math.max(0, this.stamina - (sprint ? 18 : 4) * dt); // sprint uses stamina faster
-    } else {
-      this.speed = 0;
-      this.stamina = Math.min(100, this.stamina + 14 * dt); // stamina comes back while standing
     }
 
-    // Hunger and thirst go down slowly over time.
-    this.hunger = Math.max(8, this.hunger - 0.35 * dt);
-    this.thirst = Math.max(8, this.thirst - 0.45 * dt);
+    if (this.hiding) this.prompt = "Press E to step out of hiding";
+    else if (this.world.isExit(this.x, this.z)) this.prompt = "Press E to escape";
+    else if (this.world.isHide(this.x, this.z)) this.prompt = "Press E to hide in the dark";
+    else this.prompt = "";
 
     this.syncCamera();
   }
 
-  // Put the camera at the player's eyes, on top of the ground.
+  tryMove(dx, dz) {
+    const radius = 0.45;
+    if (this.fits(this.x + dx, this.z)) this.x += dx;
+    if (this.fits(this.x, this.z + dz)) this.z += dz;
+    // radius is checked inside fits
+    void radius;
+  }
+
+  fits(x, z) {
+    const radius = 0.45;
+    return (
+      this.world.isOpen(x, z) &&
+      this.world.isOpen(x + radius, z) &&
+      this.world.isOpen(x - radius, z) &&
+      this.world.isOpen(x, z + radius) &&
+      this.world.isOpen(x, z - radius)
+    );
+  }
+
   syncCamera() {
-    const ground = this.world.heightAt(this.x, this.z);
-    this.camera.position.set(this.x, ground + this.eyeHeight, this.z);
-    this.camera.rotation.order = "YXZ"; // turn left/right first, then look up/down
+    const crouch = this.hiding ? 0.55 : 0;
+    this.camera.position.set(this.x, this.eye - crouch, this.z);
+    this.camera.rotation.order = "YXZ";
     this.camera.rotation.y = this.yaw;
     this.camera.rotation.x = this.pitch;
   }

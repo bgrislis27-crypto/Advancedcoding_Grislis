@@ -1,31 +1,44 @@
-// This file updates the circles on the screen (health, hunger, thirst, stamina).
-// It does not draw the 3D world. It only changes the HTML overlay.
+// Updates the timer, stamina bar, hint text, and the win / lose screens.
+
+function formatTime(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${minutes}:${String(secs).padStart(2, "0")}`;
+}
 
 export class Hud {
   constructor() {
-    // Save the HTML elements so we can change them every frame.
-    this.stamina = document.getElementById("meter-stamina");
-    this.hunger = document.getElementById("meter-hunger");
-    this.thirst = document.getElementById("meter-thirst");
-    this.health = document.getElementById("meter-health");
-    this.draw = document.getElementById("draw-meter");
-    this.hud = document.getElementById("hud");
     this.start = document.getElementById("start");
+    this.hud = document.getElementById("hud");
+    this.win = document.getElementById("win");
+    this.lose = document.getElementById("lose");
+    this.timer = document.getElementById("timer");
+    this.stamina = document.getElementById("stamina-fill");
+    this.prompt = document.getElementById("prompt");
+    this.winTime = document.getElementById("win-time");
+    this.loseTime = document.getElementById("lose-time");
   }
 
-  // Hide the start menu and show the in-game meters.
   show() {
     this.start.classList.add("is-hidden");
     this.hud.classList.remove("is-hidden");
   }
 
-  update(player, drawAmount) {
-    // CSS uses --p as a percent, like 80%, to fill each ring.
-    this.stamina.style.setProperty("--p", `${player.stamina}%`);
-    this.hunger.style.setProperty("--p", `${player.hunger}%`);
-    this.thirst.style.setProperty("--p", `${player.thirst}%`);
-    this.health.style.setProperty("--p", `${player.health}%`);
-    // The thin bar at the bottom of the screen shows how far the bow is drawn.
-    this.draw.style.setProperty("--draw", `${Math.round(drawAmount * 100)}%`);
+  update(player, time, prompt) {
+    this.timer.textContent = formatTime(time);
+    this.stamina.style.width = `${player.stamina}%`;
+    this.prompt.textContent = prompt;
+  }
+
+  showWin(time) {
+    this.hud.classList.add("is-hidden");
+    this.win.classList.remove("is-hidden");
+    this.winTime.textContent = `Escaped in ${formatTime(time)}`;
+  }
+
+  showLose(time) {
+    this.hud.classList.add("is-hidden");
+    this.lose.classList.remove("is-hidden");
+    this.loseTime.textContent = `Survived ${formatTime(time)}`;
   }
 }
