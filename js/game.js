@@ -6,6 +6,11 @@ import { Player } from "./player.js";
 import { Creature } from "./creature.js";
 import { Soundscape } from "./audio.js";
 import { Hud } from "./hud.js";
+import { Lighting } from "./lighting.js";
+import { CameraEffects } from "./camera.js";
+import { Watcher } from "./watcher.js";
+import { Changes } from "./changes.js";
+import { HorrorEvents } from "./events.js";
 
 // Builds the 3D Backrooms and runs the timer, creature, and win / lose checks.
 
@@ -17,11 +22,12 @@ export class Game {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.25;
+    this.renderer.toneMappingExposure = 1.05;
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0xc6b07a);
-    this.scene.fog = new THREE.Fog(0xc6b07a, 8, 32);
+    // Fog thickens with distance, so the far end of a hall fades to dark yellow.
+    this.scene.background = new THREE.Color(0x1a160e);
+    this.scene.fog = new THREE.FogExp2(0x2a2416, 0.06);
 
     this.camera = new THREE.PerspectiveCamera(78, window.innerWidth / window.innerHeight, 0.08, 50);
     this.scene.add(this.camera);
@@ -32,8 +38,13 @@ export class Game {
     this.player = new Player(this.camera, this.world);
     this.lamp = new THREE.PointLight(0xfff0c8, 2.2, 16, 1.4);
     this.camera.add(this.lamp);
+    this.lighting = new Lighting(this.world);
     this.creature = new Creature(this.scene, this.level, this.world);
+    this.watcher = new Watcher(this.scene, this.world);
+    this.changes = new Changes(this.scene, this.world);
+    this.cameraFx = new CameraEffects();
     this.audio = new Soundscape();
+    this.events = new HorrorEvents(this.audio, this.changes, this.watcher, this.cameraFx);
     this.hud = new Hud();
     this.state = "menu";
     this.time = 0;
@@ -75,11 +86,12 @@ export class Game {
   }
 
   update(dt) {
-    this.world.update(dt);
+    this.lighting.update(dt);
     if (this.state !== "play") return;
 
     this.time += dt;
     this.player.update(dt, this.input);
+    this.cameraFx.update(dt, this.player);
     if (this.player.escaped) {
       this.finish("won");
       return;
@@ -91,8 +103,10 @@ export class Game {
       return;
     }
 
+    this.watcher.update(dt, this.player);
+    this.events.update(dt, this.player);
     this.hud.update(this.player, this.time, this.player.prompt);
-    this.audio.update(dt, this.player, this.world);
+    this.audio.update(dt, this.player, this.lighting);
   }
 
   finish(result) {

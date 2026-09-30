@@ -39,11 +39,17 @@ Open [http://localhost:8000](http://localhost:8000) and click **Enter**.
 | `js/main.js` | Starts the game |
 | `js/game.js` | 3D scene, game loop, timer, win and lose checks |
 | `js/maze.js` | Builds a new random hallway layout each visit |
-| `js/world.js` | Yellow walls, carpet, flickering lights, exit door |
+| `js/world.js` | Yellow walls, carpet, ceiling lights, exit door |
+| `js/lighting.js` | Flicker and blackouts for each ceiling light |
 | `js/player.js` | Walking, running, stamina, hiding, and the exit |
+| `js/camera.js` | Head bob, sway, and a small shake after a scare |
 | `js/creature.js` | The creature that wanders and chases |
+| `js/watcher.js` | A rare shadow at the end of a hallway |
+| `js/changes.js` | Doors, boxes, and lights that change behind you |
+| `js/events.js` | Picks one quiet scare every 20–60 seconds |
+| `js/look.js` | Checks whether you are looking at a spot |
 | `js/input.js` | Keyboard and mouse |
-| `js/audio.js` | Buzzing lights, footsteps, and distant noises |
+| `js/audio.js` | Buzz, footsteps, creaks, and stretches of silence |
 | `js/hud.js` | Timer, stamina bar, and end screens |
 
 Old pixel-art pictures in `assets/` are not used by this maze.

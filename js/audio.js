@@ -1,15 +1,17 @@
-// Scary sounds made in the browser. No sound files are needed.
-// Buzzing lights, footsteps, and the occasional distant noise.
+// Procedural horror audio. No sound files.
+// Footsteps follow the player's speed. Other noises come from random directions,
+// and sometimes the building goes quiet.
 
 export class Soundscape {
   constructor() {
     this.ctx = null;
     this.buzzGain = null;
     this.stepTimer = 0;
-    this.distantTimer = 6;
+    this.ambientTimer = 7;
+    this.silence = 0;
+    this.quiet = false;
   }
 
-  // Browsers only allow sound after the player clicks.
   start() {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     this.ctx = new AudioCtx();
@@ -33,67 +35,140 @@ export class Soundscape {
 
     const filter = ctx.createBiquadFilter();
     filter.type = "bandpass";
-    filter.frequency.value = 160;
-    filter.Q.value = 12;
+    filter.frequency.value = 140;
+    filter.Q.value = 14;
 
     this.buzzGain = ctx.createGain();
-    this.buzzGain.gain.value = 0.035;
+    this.buzzGain.gain.value = 0.03;
     source.connect(filter);
     filter.connect(this.buzzGain);
     this.buzzGain.connect(ctx.destination);
     source.start();
   }
 
-  footstep(running) {
+  // Pan is -1 (left) to 1 (right), based on where the sound sits around the player.
+  panFor(player, x, z) {
+    const dx = x - player.x;
+    const dz = z - player.z;
+    const right = dx * Math.cos(player.yaw) - dz * Math.sin(player.yaw);
+    const side = Math.hypot(dx, dz) || 1;
+    return Math.max(-1, Math.min(1, right / side));
+  }
+
+  blip(frequency, seconds, volume, type, pan) {
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    osc.type = "triangle";
-    osc.frequency.value = running ? 90 : 70;
-    gain.gain.setValueAtTime(running ? 0.08 : 0.05, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+    const panner = this.ctx.createStereoPanner();
+    osc.type = type;
+    osc.frequency.setValueAtTime(frequency, now);
+    gain.gain.setValueAtTime(volume, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + seconds);
+    panner.pan.value = pan;
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(panner);
+    panner.connect(this.ctx.destination);
     osc.start(now);
-    osc.stop(now + 0.1);
+    osc.stop(now + seconds + 0.02);
   }
 
-  distant() {
+  noiseBurst(seconds, volume, frequency, pan) {
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
+    const length = Math.floor(this.ctx.sampleRate * seconds);
+    const buffer = this.ctx.createBuffer(1, length, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < length; i++) data[i] = Math.random() * 2 - 1;
+
+    const source = this.ctx.createBufferSource();
+    source.buffer = buffer;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.value = frequency;
     const gain = this.ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(90 + Math.random() * 40, now);
-    osc.frequency.exponentialRampToValueAtTime(40, now + 1.4);
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.06, now + 0.2);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.6);
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 1.7);
+    const panner = this.ctx.createStereoPanner();
+    gain.gain.setValueAtTime(volume, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + seconds);
+    panner.pan.value = pan;
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(panner);
+    panner.connect(this.ctx.destination);
+    source.start(now);
+    source.stop(now + seconds);
   }
 
-  update(dt, player, world) {
+  footstep(player) {
+    const volume = player.running ? 0.07 : 0.045;
+    const pitch = player.running ? 110 : 74;
+    this.blip(pitch, 0.08, volume, "triangle", 0);
+  }
+
+  // A few steps from somewhere else. Nothing is drawn for them.
+  distantFootsteps(player) {
+    const angle = Math.random() * Math.PI * 2;
+    const distance = 8 + Math.random() * 10;
+    const x = player.x + Math.cos(angle) * distance;
+    const z = player.z + Math.sin(angle) * distance;
+    const pan = this.panFor(player, x, z);
+    const steps = 2 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < steps; i++) {
+      setTimeout(() => this.blip(60, 0.12, 0.04, "sine", pan), i * 480);
+    }
+  }
+
+  creak(player) {
+    const pan = Math.random() * 1.4 - 0.7;
+    this.noiseBurst(1.3, 0.05, 400, pan);
+    this.blip(180, 1.1, 0.03, "sawtooth", pan);
+  }
+
+  roomNoise(player) {
+    const angle = Math.random() * Math.PI * 2;
+    const x = player.x + Math.cos(angle) * 12;
+    const z = player.z + Math.sin(angle) * 12;
+    this.noiseBurst(1.8, 0.04, 220, this.panFor(player, x, z));
+  }
+
+  // Used by the event system. Picks a distant noise, not a jumpscare sting.
+  playDistant(player) {
+    const roll = Math.random();
+    if (roll < 0.4) this.distantFootsteps(player);
+    else if (roll < 0.7) this.creak(player);
+    else this.roomNoise(player);
+  }
+
+  update(dt, player, lighting) {
     if (!this.ctx || !this.buzzGain) return;
 
-    const flicker = world.flickerAmount || 0;
-    this.buzzGain.gain.value = 0.02 + flicker * 0.05;
+    if (this.silence > 0) {
+      this.silence -= dt;
+      this.buzzGain.gain.value = 0;
+    } else {
+      const flicker = lighting.flickerAmount || 0;
+      this.buzzGain.gain.value = 0.018 + flicker * 0.06;
+    }
 
     if (player.moving && !player.hiding) {
       this.stepTimer -= dt;
+      // Faster movement means steps closer together.
+      const gap = Math.max(0.28, 0.78 - player.speed * 0.07);
       if (this.stepTimer <= 0) {
-        this.footstep(player.running);
-        this.stepTimer = player.running ? 0.32 : 0.52;
+        this.footstep(player);
+        this.stepTimer = gap;
       }
     }
 
-    this.distantTimer -= dt;
-    if (this.distantTimer <= 0) {
-      this.distant();
-      this.distantTimer = 8 + Math.random() * 9;
+    this.ambientTimer -= dt;
+    if (this.ambientTimer > 0) return;
+    this.ambientTimer = 12 + Math.random() * 14;
+
+    // Sometimes the buzz just stops. That quiet is the scare.
+    if (Math.random() < 0.28) {
+      this.silence = 3 + Math.random() * 3;
+      return;
     }
+    this.playDistant(player);
   }
 }

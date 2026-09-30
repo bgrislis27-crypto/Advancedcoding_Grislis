@@ -18,6 +18,7 @@ export class Player {
     this.hiding = false;
     this.moving = false;
     this.running = false;
+    this.speed = 0;
     this.escaped = false;
     this.prompt = "";
     this.syncCamera();
@@ -79,6 +80,7 @@ export class Player {
 
     this.moving = false;
     this.running = false;
+    this.speed = 0;
 
     if (!this.hiding) {
       let dx = 0;
@@ -103,6 +105,7 @@ export class Player {
         this.tryMove(worldX * speed * dt, worldZ * speed * dt);
         this.moving = true;
         this.running = sprint;
+        this.speed = speed;
         this.stamina = Math.max(0, this.stamina - (sprint ? 28 : 6) * dt);
       } else {
         this.stamina = Math.min(100, this.stamina + 16 * dt);

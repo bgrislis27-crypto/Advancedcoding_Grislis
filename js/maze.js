@@ -76,6 +76,41 @@ export function nextStep(level, from, to) {
   return current;
 }
 
+// Open a few 2 by 2 rooms that touch a hall, so the maze has small rooms.
+function addRooms(floor, cols, rows) {
+  let made = 0;
+  for (let attempt = 0; attempt < 40 && made < 4; attempt++) {
+    const c = 1 + Math.floor(Math.random() * (cols - 3));
+    const r = 1 + Math.floor(Math.random() * (rows - 3));
+    const touches = floor[r][c] || floor[r][c + 1] || floor[r + 1][c] || floor[r + 1][c + 1];
+    if (!touches) continue;
+    floor[r][c] = true;
+    floor[r][c + 1] = true;
+    floor[r + 1][c] = true;
+    floor[r + 1][c + 1] = true;
+    made += 1;
+  }
+}
+
+// Punch a few extra connections so some halls loop instead of only dead-ending.
+function addLoops(floor, cols, rows) {
+  const spots = [];
+  for (let r = 1; r < rows - 1; r++) {
+    for (let c = 1; c < cols - 1; c++) {
+      if (floor[r][c]) continue;
+      let links = 0;
+      if (floor[r - 1][c]) links += 1;
+      if (floor[r + 1][c]) links += 1;
+      if (floor[r][c - 1]) links += 1;
+      if (floor[r][c + 1]) links += 1;
+      if (links >= 2) spots.push([c, r]);
+    }
+  }
+  shuffle(spots);
+  const count = Math.min(spots.length, 6);
+  for (let i = 0; i < count; i++) floor[spots[i][1]][spots[i][0]] = true;
+}
+
 function randomFloor(level, dist, minDist, maxDist) {
   const choices = [];
   for (let r = 0; r < level.rows; r++) {
@@ -106,9 +141,10 @@ export function generateLevel(cols = 13, rows = 13) {
   }
 
   carve(1, 1);
-
-  // Open one long hall so the player starts looking down a corridor, not at a wall.
-  for (let c = 1; c < cols - 1; c++) floor[1][c] = true;
+  // Extra rooms and loops, so the maze is not one straight hall.
+  // The pieces still look alike, which makes it easy to lose your place.
+  addRooms(floor, cols, rows);
+  addLoops(floor, cols, rows);
 
   const dist = Array.from({ length: rows }, () => Array(cols).fill(-1));
   const queue = [{ c: 1, r: 1 }];
@@ -150,7 +186,6 @@ export function generateLevel(cols = 13, rows = 13) {
     floor,
     dist,
     start: { c: 1, r: 1 },
-    facing: { dc: 1, dr: 0 },
     exit,
     hides,
   };

@@ -7,9 +7,7 @@ export class World {
     this.scene = scene;
     this.level = level;
     this.cell = level.cell;
-    this.flickerLights = [];
-    this.flickerAmount = 0;
-    this.time = 0;
+    this.lamps = [];
     this.build();
   }
 
@@ -85,26 +83,28 @@ export class World {
 
         this.addWalls(c, r, x, z, height, hide ? darkWall : wallpaper, wallX, wallZ);
 
-        if (hide) continue;
+        // Skip some cells so the lights are spread out, with dark gaps between them.
+        if (hide || (c + r) % 2 !== 0 || lightCount >= 20) continue;
 
-        const lamp = new THREE.Mesh(lampBox, lampMaterial.clone());
+        const shade = lampMaterial.clone();
+        const lamp = new THREE.Mesh(lampBox, shade);
         lamp.position.set(x, height - 0.08, z);
         this.scene.add(lamp);
 
-        // A real light only in some halls, so the game stays smooth.
-        if ((c + r) % 2 === 0 && lightCount < 18) {
-          const light = new THREE.PointLight(0xfff1c2, 2.4, 22, 1.6);
-          light.position.set(x, height - 0.45, z);
-          this.scene.add(light);
-          lightCount += 1;
-          if (Math.random() < 0.45) {
-            this.flickerLights.push({
-              light,
-              material: lamp.material,
-              phase: Math.random() * 20,
-            });
-          }
-        }
+        // Short range, so a lit hall stays bright and the far end falls dark.
+        const light = new THREE.PointLight(0xfff1c2, 2.1, 13, 2);
+        light.position.set(x, height - 0.45, z);
+        this.scene.add(light);
+        lightCount += 1;
+        this.lamps.push({
+          light,
+          material: shade,
+          base: 2.1,
+          x,
+          z,
+          blackout: 0,
+          flicker: 0,
+        });
       }
     }
 
@@ -120,8 +120,9 @@ export class World {
     door.position.set(exit.x, 1.3, exit.z);
     this.scene.add(door);
 
-    this.scene.add(new THREE.AmbientLight(0xffe8b0, 0.85));
-    this.scene.add(new THREE.HemisphereLight(0xfff8dc, 0x8a6840, 0.45));
+    // Dim yellow fill. Ceiling lights and the player's lamp do the real work nearby.
+    this.scene.add(new THREE.AmbientLight(0xffe2a0, 0.2));
+    this.scene.add(new THREE.HemisphereLight(0xfff1c4, 0x3a2c18, 0.16));
   }
 
   addWalls(c, r, x, z, height, material, wallX, wallZ) {
@@ -145,20 +146,6 @@ export class World {
     }
   }
 
-  update(dt) {
-    this.time += dt;
-    let flicker = 0;
-
-    for (const item of this.flickerLights) {
-      const wave = Math.sin(this.time * 28 + item.phase);
-      const dip = wave > 0.55 || Math.random() < 0.015 ? 0.12 : 1;
-      item.light.intensity = 2.4 * dip;
-      item.material.emissiveIntensity = dip;
-      flicker += 1 - dip;
-    }
-
-    this.flickerAmount = this.flickerLights.length ? flicker / this.flickerLights.length : 0;
-  }
 }
 
 function wallpaperTexture() {
