@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>The Backrooms — class project</title>
+    <style>
+      :root {
+        --bg: #12100c;
+        --ink: #f3ead8;
+        --muted: #c9b48a;
+        --yellow: #e6bc4e;
+        --line: rgba(230, 188, 78, 0.28);
+      }
+
+      * { box-sizing: border-box; }
+
+      html { scroll-behavior: smooth; }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 18px/1.55 Georgia, "Iowan Old Style", Palatino, serif;
+      }
+
+      a { color: var(--yellow); }
+
+      .bar {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: center;
+        padding: 14px 7vw;
+        background: rgba(18, 16, 12, 0.92);
+        border-bottom: 1px solid var(--line);
+        backdrop-filter: blur(8px);
+      }
+
+      .bar strong { letter-spacing: 0.04em; }
+
+      .bar nav { display: flex; gap: 18px; font: 14px/1 system-ui, sans-serif; }
+
+      .bar a { color: var(--muted); text-decoration: none; }
+
+      .wrap { width: min(760px, calc(100% - 12vw)); margin: 0 auto; }
+
+      .hero { padding: 72px 0 28px; }
+
+      .kicker {
+        margin: 0 0 12px;
+        color: var(--yellow);
+        font: 12px/1.2 system-ui, sans-serif;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0 0 16px;
+        font-size: clamp(42px, 7vw, 68px);
+        font-weight: 500;
+        letter-spacing: -0.03em;
+        line-height: 0.95;
+      }
+
+      .lede { margin: 0 0 28px; color: var(--muted); font-size: 21px; }
+
+      .actions { display: flex; flex-wrap: wrap; gap: 12px; }
+
+      .button {
+        display: inline-block;
+        padding: 12px 18px;
+        border-radius: 999px;
+        background: var(--yellow);
+        color: #241c0e;
+        font: 700 15px/1 system-ui, sans-serif;
+        text-decoration: none;
+      }
+
+      .button.quiet {
+        background: transparent;
+        color: var(--ink);
+        border: 1px solid var(--line);
+      }
+
+      figure { margin: 36px auto 8px; width: min(980px, calc(100% - 8vw)); }
+
+      img { display: block; width: 100%; height: auto; border-radius: 8px; }
+
+      figcaption {
+        margin-top: 10px;
+        color: var(--muted);
+        font: 14px/1.4 system-ui, sans-serif;
+      }
+
+      section { padding: 48px 0; border-top: 1px solid var(--line); }
+
+      h2 { margin: 0 0 16px; font-size: 32px; font-weight: 500; }
+
+      .rows { margin: 0; }
+
+      .rows div {
+        display: grid;
+        grid-template-columns: 140px 1fr;
+        gap: 12px;
+        padding: 12px 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .rows dt { margin: 0; color: var(--yellow); font: 600 15px/1.4 system-ui, sans-serif; }
+
+      .rows dd { margin: 0; }
+
+      ul { margin: 0; padding-left: 1.1em; }
+
+      li { margin: 0 0 10px; }
+
+      table { width: 100%; border-collapse: collapse; font: 15px/1.4 system-ui, sans-serif; }
+
+      th, td { text-align: left; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+
+      th { color: var(--muted); font-weight: 600; }
+
+      code { color: var(--yellow); }
+
+      footer {
+        padding: 28px 7vw 48px;
+        color: var(--muted);
+        font: 14px/1.4 system-ui, sans-serif;
+        border-top: 1px solid var(--line);
+      }
+
+      @media (max-width: 640px) {
+        .rows div { grid-template-columns: 1fr; gap: 4px; }
+        .bar { padding: 12px 5vw; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="bar">
+      <strong>The Backrooms</strong>
+      <nav>
+        <a href="#play">Play</a>
+        <a href="#controls">Controls</a>
+        <a href="#code">Code</a>
+      </nav>
+    </header>
+
+    <main>
+      <div class="wrap hero" id="play">
+        <p class="kicker">Advanced coding class</p>
+        <h1>The Backrooms</h1>
+        <p class="lede">
+          A first-person maze. The halls are yellow, the lights fail on their own,
+          and a creature is searching. Find the green exit before it finds you.
+        </p>
+        <div class="actions">
+          <a class="button" href="https://htmlpreview.github.io/?https://raw.githubusercontent.com/bgrislis27-crypto/Advancedcoding_Grislis/main/play.html">Play the game</a>
+          <a class="button quiet" href="https://github.com/bgrislis27-crypto/Advancedcoding_Grislis">View the code</a>
+        </div>
+      </div>
+
+      <figure>
+        <img src="https://raw.githubusercontent.com/bgrislis27-crypto/Advancedcoding_Grislis/main/images/hallway.jpg" alt="A yellow hallway with carpet, ceiling lights, and fog at the far end" />
+        <figcaption class="wrap">The view after you click Enter. Farther down the hall, the fog gets thicker and the light falls off.</figcaption>
+      </figure>
+
+      <section>
+        <div class="wrap">
+          <h2>What you do</h2>
+          <p>
+            Each visit builds a new maze. Halls turn, meet, loop, and end. They look
+            similar on purpose, so it is easy to lose your place. Run if you need to,
+            hide in a dark corner, and press E at the green exit.
+          </p>
+          <p>
+            The scares stay quiet. A light can go out behind you. A box can shift.
+            A shadow can stand at the end of a hall, then leave if you get close or
+            look away. The creature still walks the maze and catches you if it gets too near.
+          </p>
+        </div>
+      </section>
+
+      <section id="controls">
+        <div class="wrap">
+          <h2>Controls</h2>
+          <dl class="rows">
+            <div><dt>Mouse</dt><dd>Look around. Click the screen if the mouse is not locked.</dd></div>
+            <div><dt>W A S D</dt><dd>Walk.</dd></div>
+            <div><dt>Shift</dt><dd>Run. The stamina bar drops while you run and fills when you stop.</dd></div>
+            <div><dt>E</dt><dd>Hide in a dark corner, step back out, or use the exit.</dd></div>
+            <div><dt>Arrow keys</dt><dd>Turn left and right if the mouse is not locked.</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section>
+        <div class="wrap">
+          <h2>What is in the game</h2>
+          <ul>
+            <li>Yellow wallpaper, carpet, and ceiling lights.</li>
+            <li>Lights that flicker alone. One can stay off for a few seconds.</li>
+            <li>Fog that makes distant halls darker than the space around you.</li>
+            <li>Rooms, turns, dead ends, and loops.</li>
+            <li>A searching creature, plus a rare shadow that does not chase.</li>
+            <li>Footsteps, a light buzz, creaks, and stretches of silence.</li>
+            <li>A timer. You win at the exit. You lose if the creature catches you.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="code">
+        <div class="wrap">
+          <h2>Where the code lives</h2>
+          <p>The game is plain JavaScript and Three.js. Each system has its own file.</p>
+          <table>
+            <thead>
+              <tr><th>File</th><th>Job</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>index.html</code></td><td>The game page, timer, and win or lose screens</td></tr>
+              <tr><td><code>play.html</code></td><td>The same game in one file, for the play link</td></tr>
+              <tr><td><code>js/maze.js</code></td><td>Random halls, rooms, and loops</td></tr>
+              <tr><td><code>js/world.js</code></td><td>Walls, carpet, lights, and the exit door</td></tr>
+              <tr><td><code>js/player.js</code></td><td>Walking, running, hiding</td></tr>
+              <tr><td><code>js/lighting.js</code></td><td>Flicker and blackouts</td></tr>
+              <tr><td><code>js/creature.js</code></td><td>The creature that chases</td></tr>
+              <tr><td><code>js/watcher.js</code></td><td>The far shadow</td></tr>
+              <tr><td><code>js/events.js</code></td><td>One quiet scare every 20–60 seconds</td></tr>
+              <tr><td><code>js/audio.js</code></td><td>Steps, buzz, creaks, silence</td></tr>
+              <tr><td><code>js/camera.js</code></td><td>Head bob and a small shake</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      Public class project on GitHub.
+      <a href="https://github.com/bgrislis27-crypto/Advancedcoding_Grislis">bgrislis27-crypto/Advancedcoding_Grislis</a>
+    </footer>
+  </body>
+</html>

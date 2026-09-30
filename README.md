@@ -6,7 +6,11 @@ This is a browser game made with **Three.js**. No extra install is needed.
 
 ## Link for class
 
-Your teacher can open the game in a browser from this file on GitHub:
+One scrolling page about the game:
+
+https://htmlpreview.github.io/?https://raw.githubusercontent.com/bgrislis27-crypto/Advancedcoding_Grislis/main/about.html
+
+Play the game from that page, or open it directly:
 
 https://htmlpreview.github.io/?https://raw.githubusercontent.com/bgrislis27-crypto/Advancedcoding_Grislis/main/play.html
 
