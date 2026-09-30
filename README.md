@@ -8,7 +8,7 @@ This is a browser game made with **Three.js**. No extra install is needed.
 
 Your teacher can open the game in a browser from this file on GitHub:
 
-https://htmlpreview.github.io/?https://raw.githubusercontent.com/bgrislis27-crypto/Advancedcoding_Grislis/cursor/backrooms-horror-c02b/play.html
+https://htmlpreview.github.io/?https://raw.githubusercontent.com/bgrislis27-crypto/Advancedcoding_Grislis/main/play.html
 
 `play.html` is the same game packed into one file so that link can run it. The class code you read and edit is still the separate files below.
 
