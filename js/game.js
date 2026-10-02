@@ -70,9 +70,14 @@ export class Game {
     this.state = "menu";
     this.time = 0;
     this.last = 0;
+    this.prepareMenu();
 
     window.addEventListener("resize", () => this.resize());
     document.getElementById("start-btn").addEventListener("click", () => this.enter());
+    document.getElementById("settings-btn").addEventListener("click", () => this.showMenu("menu-settings"));
+    document.getElementById("more-btn").addEventListener("click", () => this.showMenu("menu-more"));
+    document.getElementById("settings-back").addEventListener("click", () => this.showMenu("menu-main"));
+    document.getElementById("more-back").addEventListener("click", () => this.showMenu("menu-main"));
     document.getElementById("win-btn").addEventListener("click", () => location.reload());
     document.getElementById("lose-btn").addEventListener("click", () => location.reload());
     canvas.addEventListener("click", () => {
@@ -80,8 +85,33 @@ export class Game {
     });
   }
 
+  // The menu sits on a brighter view of the same halls. Play starts dimmer.
+  prepareMenu() {
+    this.renderer.toneMappingExposure = 1.65;
+    this.scene.fog.density = 0.018;
+    this.scene.fog.color.set(0xc2b06a);
+    this.scene.background.set(0xc2b06a);
+    this.world.ambient.intensity = 0.62;
+    this.lamp.intensity = 0;
+    this.player.pitch = 0.16;
+    this.player.syncCamera();
+  }
+
+  showMenu(id) {
+    for (const name of ["menu-main", "menu-settings", "menu-more"]) {
+      document.getElementById(name).classList.toggle("is-hidden", name !== id);
+    }
+  }
+
   enter() {
     this.state = "play";
+    this.renderer.toneMappingExposure = 1.05;
+    this.scene.fog.density = 0.06;
+    this.scene.fog.color.set(0x2a2416);
+    this.scene.background.set(0x1a160e);
+    this.world.ambient.intensity = 0.2;
+    this.player.pitch = -0.08;
+    this.player.syncCamera();
     this.hud.show();
     this.input.lock();
     this.audio.start();

@@ -5,23 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Backrooms</title>
     <link rel="stylesheet" href="css/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Libre+Baskerville:ital,wght@0,400;1,400&display=swap" rel="stylesheet" />
   </head>
   <body>
     <canvas id="game" aria-label="Backrooms hallways"></canvas>
     <div class="vignette"></div>
     <div id="fear"></div>
 
-    <div id="start" class="screen">
-      <div class="card">
-        <p class="kicker">Find the exit</p>
-        <h1>The Backrooms</h1>
-        <p>
-          The halls are random. A creature is searching. Hide in the dark corners,
-          and reach the green exit before it catches you.
-        </p>
-        <p class="controls">Mouse to look · WASD to move · Shift to run · F flashlight · E to hide, open a door, or escape</p>
-        <button id="start-btn" type="button">Enter</button>
+    <div id="start" class="screen menu-screen">
+      <div class="menu-wrap">
+        <h1 class="logo"><span>•</span> BACKROOMS <span>•</span></h1>
+        <p class="tagline">INSPIRED BY A POST ON 4CHAN WITH THE SAME NAME</p>
+
+        <div id="menu-main" class="menu-list">
+          <p class="menu-label">MAIN MENU</p>
+          <button id="start-btn" type="button">WAKE UP</button>
+          <button id="settings-btn" type="button">SETTINGS</button>
+          <button id="more-btn" type="button">MORE OPTIONS</button>
+        </div>
+
+        <div id="menu-settings" class="menu-list is-hidden">
+          <p class="menu-label">SETTINGS</p>
+          <p class="menu-note">MOUSE LOOK<br />WASD MOVE<br />SHIFT RUN<br />F FLASHLIGHT<br />E DOOR, HIDE, OR EXIT</p>
+          <button id="settings-back" type="button">BACK</button>
+        </div>
+
+        <div id="menu-more" class="menu-list is-hidden">
+          <p class="menu-label">MORE OPTIONS</p>
+          <p class="menu-note">THERE IS NO MAP.<br />FIND THE GREEN EXIT.<br />EACH VISIT BUILDS A NEW MAZE.</p>
+          <button id="more-back" type="button">BACK</button>
+        </div>
       </div>
+      <p class="headphones">HEADPHONES ARE RECOMMENDED</p>
     </div>
 
     <div id="hud" class="hud is-hidden">

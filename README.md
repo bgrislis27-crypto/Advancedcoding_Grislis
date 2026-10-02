@@ -24,7 +24,7 @@ From this folder:
 python3 -m http.server 8000
 ```
 
-Open [http://localhost:8000](http://localhost:8000) and click **Enter**.
+Open [http://localhost:8000](http://localhost:8000) and click **Wake Up**.
 
 ## Controls
 
