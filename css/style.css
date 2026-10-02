@@ -54,14 +54,14 @@ body:has(.menu-screen:not(.is-hidden)) .vignette {
 .menu-wrap {
   position: absolute;
   left: 50%;
-  top: 9%;
+  top: 11%;
   transform: translateX(-50%);
   width: min(680px, calc(100% - 24px));
   text-align: center;
 }
 
 .logo {
-  margin: 0;
+  margin: 0 0 36px;
   color: #161910;
   font-family: "Cormorant Garamond", Georgia, serif;
   font-size: clamp(46px, 7vw, 78px);
@@ -78,15 +78,6 @@ body:has(.menu-screen:not(.is-hidden)) .vignette {
   margin: 0 0.12em;
   font-size: 0.42em;
   vertical-align: 0.45em;
-}
-
-.tagline {
-  margin: 10px 0 34px;
-  color: rgba(255, 252, 244, 0.92);
-  font-family: "Libre Baskerville", Georgia, serif;
-  font-size: 12px;
-  letter-spacing: 0.16em;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
 }
 
 .menu-list {
