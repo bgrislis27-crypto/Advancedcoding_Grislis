@@ -1,7 +1,9 @@
 import * as THREE from "three";
 import { hasSight, nextStep } from "./maze.js";
+import { lookingAt } from "./look.js";
 
-// A slow dark figure. It wanders the halls, and chases when it can see you.
+// The entity is usually out of sight.
+// It hides, watches, wanders, checks sounds, creeps closer, and only rarely chases.
 
 export class Creature {
   constructor(scene, level, world) {
@@ -10,14 +12,15 @@ export class Creature {
     const start = world.centerOf(level.creature.c, level.creature.r);
     this.x = start.x;
     this.z = start.z;
-    this.searchSpeed = 1.55;
-    this.chaseSpeed = 2.75;
-    this.mode = "search";
+    this.state = "hidden";
+    this.timer = 5;
+    this.agitation = 0;
     this.goal = null;
-    this.retarget = 1;
-    this.lostSight = 0;
+    this.lost = 0;
+    this.distance = 99;
     this.caughtPlayer = false;
     this.mesh = this.buildMesh();
+    this.mesh.visible = false;
     scene.add(this.mesh);
   }
 
@@ -37,9 +40,25 @@ export class Creature {
     return group;
   }
 
+  enter(state) {
+    this.state = state;
+    this.timer = state === "hidden" ? 6 + Math.random() * 8 : 5 + Math.random() * 4;
+    this.lost = 0;
+    if (state === "hidden") this.mesh.visible = false;
+    if (state === "wandering") this.goal = this.randomCell();
+  }
+
+  // A sound gives it a place to investigate.
+  hear(x, z) {
+    this.goal = this.world.cellAt(x, z);
+    if (this.state === "hidden" || this.state === "wandering" || this.state === "watching") {
+      this.enter("investigating");
+    }
+  }
+
   randomCell() {
     const { floor, cols, rows } = this.level;
-    for (let attempt = 0; attempt < 30; attempt++) {
+    for (let attempt = 0; attempt < 20; attempt++) {
       const c = Math.floor(Math.random() * cols);
       const r = Math.floor(Math.random() * rows);
       if (floor[r][c]) return { c, r };
@@ -47,51 +66,91 @@ export class Creature {
     return { c: 1, r: 1 };
   }
 
+  stepToward(cell, speed, dt) {
+    const myCell = this.world.cellAt(this.x, this.z);
+    const next = nextStep(this.level, myCell, cell);
+    const target = this.world.centerOf(next.c, next.r);
+    const dx = target.x - this.x;
+    const dz = target.z - this.z;
+    const length = Math.hypot(dx, dz);
+    if (length > 0.12) {
+      const step = Math.min(length, speed * dt);
+      this.x += (dx / length) * step;
+      this.z += (dz / length) * step;
+      this.mesh.rotation.y = Math.atan2(dx, dz);
+    }
+  }
+
+  watchFrom(player) {
+    const stepX = -Math.sin(player.yaw) * this.world.cell;
+    const stepZ = -Math.cos(player.yaw) * this.world.cell;
+    let x = player.x;
+    let z = player.z;
+    for (let i = 0; i < 8; i++) {
+      if (!this.world.isOpen(x + stepX, z + stepZ)) break;
+      x += stepX;
+      z += stepZ;
+    }
+    if (Math.hypot(x - player.x, z - player.z) > 8) {
+      this.x = x;
+      this.z = z;
+    }
+  }
+
   update(dt, player) {
     const playerCell = this.world.cellAt(player.x, player.z);
     const myCell = this.world.cellAt(this.x, this.z);
-    const dist = Math.hypot(player.x - this.x, player.z - this.z);
-    const sees = !player.hiding && dist < 18 && hasSight(this.level, myCell, playerCell);
+    this.distance = Math.hypot(player.x - this.x, player.z - this.z);
+    const sees = !player.hiding && this.distance < 16 && hasSight(this.level, myCell, playerCell);
+    const looked = this.mesh.visible && lookingAt(player, this.x, this.z, 0.35);
+    this.timer -= dt;
 
-    if (sees) {
-      this.mode = "chase";
-      this.goal = playerCell;
-      this.lostSight = 0;
-    } else if (this.mode === "chase") {
-      this.lostSight += dt;
-      if (this.lostSight > 2.2) {
-        this.mode = "search";
-        this.goal = null;
-      }
+    if (player.running && this.distance < 22) this.agitation = Math.min(12, this.agitation + dt * 1.6);
+    else this.agitation = Math.max(0, this.agitation - dt * 0.35);
+
+    // Looking at it can make it leave, unless it has already started a chase.
+    if (looked && this.state !== "chasing" && Math.random() < dt * 0.7) {
+      this.enter("hidden");
+      return;
     }
 
-    this.retarget -= dt;
-    if (this.mode === "search" && (this.retarget <= 0 || !this.goal)) {
-      this.goal = this.randomCell();
-      this.retarget = 4 + Math.random() * 3;
+    if (this.state !== "chasing" && this.agitation > 7 && sees && Math.random() < dt * 0.15) {
+      this.enter("chasing");
     }
 
-    if (this.goal) {
-      const next = nextStep(this.level, myCell, this.goal);
-      const target = this.world.centerOf(next.c, next.r);
-      const dx = target.x - this.x;
-      const dz = target.z - this.z;
-      const length = Math.hypot(dx, dz);
-      const speed = this.mode === "chase" ? this.chaseSpeed : this.searchSpeed;
-      if (length > 0.15) {
-        const step = Math.min(length, speed * dt);
-        this.x += (dx / length) * step;
-        this.z += (dz / length) * step;
-        this.mesh.rotation.y = Math.atan2(dx, dz);
-      } else if (next.c === this.goal.c && next.r === this.goal.r) {
-        this.goal = null;
-      }
+    if (this.state === "hidden") {
+      this.mesh.visible = false;
+      if (player.running && this.distance < 18) this.enter("investigating");
+      else if (this.timer <= 0) this.enter(Math.random() < 0.5 ? "watching" : "wandering");
+    } else if (this.state === "watching") {
+      this.watchFrom(player);
+      this.mesh.visible = this.distance > 7 && this.distance < 20;
+      if (player.stillTime > 2.8) this.enter("approaching");
+      else if (this.timer <= 0) this.enter("hidden");
+    } else if (this.state === "wandering") {
+      this.mesh.visible = this.distance < 18;
+      if (this.goal) this.stepToward(this.goal, 1.1, dt);
+      if (player.running) this.enter("investigating");
+      else if (this.timer <= 0) this.enter("hidden");
+    } else if (this.state === "investigating") {
+      this.mesh.visible = this.distance < 20;
+      const cell = this.goal || playerCell;
+      this.stepToward(cell, 1.45, dt);
+      if (this.timer <= 0) this.enter("wandering");
+    } else if (this.state === "approaching") {
+      this.mesh.visible = true;
+      if (player.moving && !player.running) this.enter("watching");
+      else this.stepToward(playerCell, 0.85, dt);
+      if (this.distance < 3.5 || this.timer <= 0) this.enter("hidden");
+    } else if (this.state === "chasing") {
+      this.mesh.visible = true;
+      if (sees) this.lost = 0;
+      else this.lost += dt;
+      this.stepToward(playerCell, 2.7, dt);
+      if (this.distance < 1.15 && !player.hiding) this.caughtPlayer = true;
+      if (this.lost > 3.5) this.enter("hidden");
     }
 
     this.mesh.position.set(this.x, 0, this.z);
-
-    const close = Math.hypot(player.x - this.x, player.z - this.z);
-    if (close < 1.2 && !player.hiding) this.caughtPlayer = true;
-    if (close < 0.9) this.caughtPlayer = true;
   }
 }

@@ -14,6 +14,7 @@ export class Hud {
     this.lose = document.getElementById("lose");
     this.timer = document.getElementById("timer");
     this.stamina = document.getElementById("stamina-fill");
+    this.battery = document.getElementById("battery-fill");
     this.prompt = document.getElementById("prompt");
     this.winTime = document.getElementById("win-time");
     this.loseTime = document.getElementById("lose-time");
@@ -24,9 +25,10 @@ export class Hud {
     this.hud.classList.remove("is-hidden");
   }
 
-  update(player, time, prompt) {
+  update(player, time, prompt, battery = 100) {
     this.timer.textContent = formatTime(time);
     this.stamina.style.width = `${player.stamina}%`;
+    if (this.battery) this.battery.style.width = `${battery}%`;
     this.prompt.textContent = prompt;
   }
 

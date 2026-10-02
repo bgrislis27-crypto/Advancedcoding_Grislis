@@ -6,6 +6,7 @@ export class Lighting {
     this.world = world;
     this.time = 0;
     this.flickerAmount = 0;
+    this.fear = 0;
 
     for (const lamp of world.lamps) {
       lamp.nextRoll = 1 + Math.random() * 5;
@@ -15,9 +16,14 @@ export class Lighting {
     }
   }
 
+  setFear(amount) {
+    this.fear = amount / 100;
+  }
+
   setLamp(lamp, brightness) {
-    lamp.light.intensity = lamp.base * brightness;
-    lamp.material.emissiveIntensity = 1.4 * brightness;
+    const dim = 1 - this.fear * 0.5;
+    lamp.light.intensity = lamp.base * brightness * dim;
+    lamp.material.emissiveIntensity = 1.4 * brightness * dim;
   }
 
   update(dt) {

@@ -175,14 +175,14 @@
         <div class="wrap">
           <h2>What you do</h2>
           <p>
-            Each visit builds a new maze. Halls turn, meet, loop, and end. They look
-            similar on purpose, so it is easy to lose your place. Run if you need to,
-            hide in a dark corner, and press E at the green exit.
+          Each visit builds a new maze. Halls turn, meet, loop, and end. They look
+          similar on purpose, so it is easy to lose your place. There is no map.
+          Run if you need to, hide in a dark corner, and press E at the green exit.
           </p>
           <p>
             The scares stay quiet. A light can go out behind you. A box can shift.
             A shadow can stand at the end of a hall, then leave if you get close or
-            look away. The creature still walks the maze and catches you if it gets too near.
+            look away. The entity usually stays out of sight. It only chases during a rare moment.
           </p>
         </div>
       </section>
@@ -193,8 +193,9 @@
           <dl class="rows">
             <div><dt>Mouse</dt><dd>Look around. Click the screen if the mouse is not locked.</dd></div>
             <div><dt>W A S D</dt><dd>Walk.</dd></div>
-            <div><dt>Shift</dt><dd>Run. The stamina bar drops while you run and fills when you stop.</dd></div>
-            <div><dt>E</dt><dd>Hide in a dark corner, step back out, or use the exit.</dd></div>
+            <div><dt>Shift</dt><dd>Run. The stamina bar drops while you run and fills when you stop. Steps get louder.</dd></div>
+            <div><dt>F</dt><dd>Flashlight. The gold bar is the battery. It flickers when the battery is low.</dd></div>
+            <div><dt>E</dt><dd>Try a door, hide in a dark corner, step back out, or use the exit.</dd></div>
             <div><dt>Arrow keys</dt><dd>Turn left and right if the mouse is not locked.</dd></div>
           </dl>
         </div>
@@ -207,9 +208,11 @@
             <li>Yellow wallpaper, carpet, and ceiling lights.</li>
             <li>Lights that flicker alone. One can stay off for a few seconds.</li>
             <li>Fog that makes distant halls darker than the space around you.</li>
-            <li>Rooms, turns, dead ends, and loops.</li>
-            <li>A searching creature, plus a rare shadow that does not chase.</li>
-            <li>Footsteps, a light buzz, creaks, and stretches of silence.</li>
+            <li>Connected areas: yellow halls, offices, wet floors, maintenance, stairs, empty rooms, and stranger halls.</li>
+            <li>Doors. Some open, some are locked, some lead to another kind of room, and a few vanish if you look away.</li>
+            <li>A flashlight. Fear is hidden: the picture gets a little worse in the dark, and a still room lets it settle.</li>
+            <li>An entity that hides, watches, wanders, and only sometimes chases, plus a rare shadow.</li>
+            <li>Footsteps, a light buzz, sounds from different directions, and stretches of silence.</li>
             <li>A timer. You win at the exit. You lose if the creature catches you.</li>
           </ul>
         </div>
@@ -230,7 +233,10 @@
               <tr><td><code>js/world.js</code></td><td>Walls, carpet, lights, and the exit door</td></tr>
               <tr><td><code>js/player.js</code></td><td>Walking, running, hiding</td></tr>
               <tr><td><code>js/lighting.js</code></td><td>Flicker and blackouts</td></tr>
-              <tr><td><code>js/creature.js</code></td><td>The creature that chases</td></tr>
+              <tr><td><code>js/creature.js</code></td><td>Entity states, from hidden to chasing</td></tr>
+              <tr><td><code>js/flashlight.js</code></td><td>Battery, flicker, and malfunctions</td></tr>
+              <tr><td><code>js/fear.js</code></td><td>Hidden fear and the screen effects</td></tr>
+              <tr><td><code>js/doors.js</code></td><td>Doors with different outcomes</td></tr>
               <tr><td><code>js/watcher.js</code></td><td>The far shadow</td></tr>
               <tr><td><code>js/events.js</code></td><td>One quiet scare every 20–60 seconds</td></tr>
               <tr><td><code>js/audio.js</code></td><td>Steps, buzz, creaks, silence</td></tr>

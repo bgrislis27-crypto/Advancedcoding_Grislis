@@ -4,13 +4,18 @@
 const KINDS = ["light", "sound", "door", "object", "shadow", "patch"];
 
 export class HorrorEvents {
-  constructor(audio, changes, watcher, cameraFx) {
+  constructor(audio, changes, watcher, cameraFx, fear, flashlight, creature) {
     this.audio = audio;
     this.changes = changes;
     this.watcher = watcher;
     this.cameraFx = cameraFx;
+    this.fear = fear;
+    this.flashlight = flashlight;
+    this.creature = creature;
     this.wait = 20 + Math.random() * 20;
     this.last = "";
+    this.since = 999;
+    this.lastSpot = null;
   }
 
   nextKind() {
@@ -21,7 +26,7 @@ export class HorrorEvents {
   run(kind, player) {
     if (kind === "light") return this.changes.extinguishBehind(player);
     if (kind === "sound") {
-      this.audio.playDistant(player);
+      this.lastSpot = this.audio.playDistant(player);
       return true;
     }
     if (kind === "door") {
@@ -40,6 +45,7 @@ export class HorrorEvents {
   }
 
   update(dt, player) {
+    this.since += dt;
     this.wait -= dt;
     if (this.wait > 0) return;
 
@@ -51,5 +57,11 @@ export class HorrorEvents {
       if (!kind || !this.run(kind, player)) return;
     }
     this.last = kind;
+    this.since = 0;
+    if (this.fear) this.fear.add(kind === "shadow" ? 10 : 5);
+    if (kind === "sound" && this.lastSpot && this.creature) {
+      this.creature.hear(this.lastSpot.x, this.lastSpot.z);
+    }
+    if (this.flashlight && Math.random() < 0.25) this.flashlight.malfunction(1.2);
   }
 }

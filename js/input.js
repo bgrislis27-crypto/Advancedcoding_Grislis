@@ -1,5 +1,5 @@
 // Watches the keyboard and mouse.
-// WASD moves, Shift runs, E interacts, and the mouse looks around.
+// WASD moves, Shift runs, F toggles the flashlight, E interacts, and the mouse looks around.
 
 export class Input {
   constructor(canvas) {
@@ -13,7 +13,7 @@ export class Input {
     window.addEventListener("keydown", (event) => {
       if (!this.keys.has(event.code)) this.pressed.add(event.code);
       this.keys.add(event.code);
-      if (["Space", "KeyE"].includes(event.code)) event.preventDefault();
+      if (["Space", "KeyE", "KeyF"].includes(event.code)) event.preventDefault();
     });
 
     window.addEventListener("keyup", (event) => {

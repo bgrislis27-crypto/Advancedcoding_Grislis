@@ -20,6 +20,19 @@ function key(c, r) {
   return `${c},${r}`;
 }
 
+// Which kind of place this cell belongs to. There is no player map.
+// The rooms themselves are the landmarks.
+export function zoneName(level, c, r) {
+  const { cols, rows } = level;
+  if (r <= 3) return "yellow";
+  if (r <= 6) return "office";
+  if (r <= 8) return "flood";
+  if (c >= cols - 4) return "maintenance";
+  if (r >= rows - 4 && c <= 4) return "stairs";
+  if (r >= rows - 3) return "strange";
+  return "abandoned";
+}
+
 // Floor cells that share a side with this one.
 export function neighbors(level, c, r) {
   const next = [];
@@ -179,6 +192,17 @@ export function generateLevel(cols = 13, rows = 13) {
     }
   }
 
+  const safe = new Set();
+  const offices = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (!floor[r][c]) continue;
+      if (zoneName({ cols, rows }, c, r) === "office") offices.push(key(c, r));
+    }
+  }
+  shuffle(offices);
+  for (let i = 0; i < Math.min(2, offices.length); i++) safe.add(offices[i]);
+
   const level = {
     cols,
     rows,
@@ -188,6 +212,7 @@ export function generateLevel(cols = 13, rows = 13) {
     start: { c: 1, r: 1 },
     exit,
     hides,
+    safe,
   };
   level.creature = randomFloor(level, dist, 6, 10);
   return level;

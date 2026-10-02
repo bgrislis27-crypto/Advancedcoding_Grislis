@@ -11,6 +11,12 @@ import { CameraEffects } from "./camera.js";
 import { Watcher } from "./watcher.js";
 import { Changes } from "./changes.js";
 import { HorrorEvents } from "./events.js";
+import { Doors } from "./doors.js";
+import { Fear } from "./fear.js";
+import { Flashlight } from "./flashlight.js";
+import { Hallucination } from "./hallucination.js";
+import { TimeWarp } from "./timewarp.js";
+import { Jumpscare } from "./scare.js";
 
 // Builds the 3D Backrooms and runs the timer, creature, and win / lose checks.
 
@@ -32,19 +38,34 @@ export class Game {
     this.camera = new THREE.PerspectiveCamera(78, window.innerWidth / window.innerHeight, 0.08, 50);
     this.scene.add(this.camera);
 
-    this.level = generateLevel(13, 13);
+    this.level = generateLevel(17, 15);
     this.world = new World(this.scene, this.level);
     this.input = new Input(canvas);
     this.player = new Player(this.camera, this.world);
     this.lamp = new THREE.PointLight(0xfff0c8, 2.2, 16, 1.4);
     this.camera.add(this.lamp);
+    this.flashlight = new Flashlight(this.lamp);
+    this.doors = new Doors(this.scene, this.world);
+    this.player.doorSystem = this.doors;
     this.lighting = new Lighting(this.world);
     this.creature = new Creature(this.scene, this.level, this.world);
     this.watcher = new Watcher(this.scene, this.world);
     this.changes = new Changes(this.scene, this.world);
     this.cameraFx = new CameraEffects();
     this.audio = new Soundscape();
-    this.events = new HorrorEvents(this.audio, this.changes, this.watcher, this.cameraFx);
+    this.fear = new Fear(this.world);
+    this.hallucination = new Hallucination(this.scene);
+    this.timewarp = new TimeWarp();
+    this.scare = new Jumpscare(this.camera, this.audio);
+    this.events = new HorrorEvents(
+      this.audio,
+      this.changes,
+      this.watcher,
+      this.cameraFx,
+      this.fear,
+      this.flashlight,
+      this.creature
+    );
     this.hud = new Hud();
     this.state = "menu";
     this.time = 0;
@@ -91,7 +112,8 @@ export class Game {
 
     this.time += dt;
     this.player.update(dt, this.input);
-    this.cameraFx.update(dt, this.player);
+    this.flashlight.update(dt, this.input, this.player);
+    this.doors.update(this.player);
     if (this.player.escaped) {
       this.finish("won");
       return;
@@ -105,7 +127,14 @@ export class Game {
 
     this.watcher.update(dt, this.player);
     this.events.update(dt, this.player);
-    this.hud.update(this.player, this.time, this.player.prompt);
+    const fearLevel = this.fear.update(dt, this.player, this.flashlight, this.creature);
+    this.cameraFx.update(dt, this.player, fearLevel);
+    this.hallucination.update(dt, this.player, this.fear);
+    this.timewarp.update(this.player, this.changes, this.world);
+    this.scare.update(dt, this.fear, this.events, this.creature);
+    this.lighting.setFear(fearLevel);
+    this.hud.update(this.player, this.time, this.player.prompt, this.flashlight.battery);
+    this.audio.setFear(fearLevel);
     this.audio.update(dt, this.player, this.lighting);
   }
 

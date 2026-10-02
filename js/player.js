@@ -19,6 +19,10 @@ export class Player {
     this.moving = false;
     this.running = false;
     this.speed = 0;
+    this.stillTime = 0;
+    this.distance = 0;
+    this.inSafe = false;
+    this.inDark = false;
     this.escaped = false;
     this.prompt = "";
     this.syncCamera();
@@ -70,7 +74,12 @@ export class Player {
     }
 
     const pressedE = input.consumePress("KeyE");
-    if (pressedE && this.world.isExit(this.x, this.z) && !this.hiding) {
+    const door = this.world.nearestDoor(this.x, this.z);
+    const closedDoor = door && !door.open && !door.gone ? door : null;
+    let doorNote = "";
+    if (pressedE && closedDoor && !this.hiding && this.doorSystem) {
+      doorNote = this.doorSystem.use(closedDoor, this);
+    } else if (pressedE && this.world.isExit(this.x, this.z) && !this.hiding) {
       this.escaped = true;
     } else if (pressedE && this.world.isHide(this.x, this.z)) {
       this.hiding = !this.hiding;
@@ -92,7 +101,9 @@ export class Player {
 
       const trying = dx !== 0 || dz !== 0;
       const sprint = trying && input.running() && this.stamina > 1;
-      const speed = sprint ? this.runSpeed : this.walkSpeed;
+      const zone = this.world.zoneAt(this.x, this.z);
+      const drag = zone === "flood" ? 0.58 : 1;
+      const speed = (sprint ? this.runSpeed : this.walkSpeed) * drag;
 
       if (trying) {
         const length = Math.hypot(dx, dz);
@@ -106,15 +117,25 @@ export class Player {
         this.moving = true;
         this.running = sprint;
         this.speed = speed;
-        this.stamina = Math.max(0, this.stamina - (sprint ? 28 : 6) * dt);
+        this.stillTime = 0;
+        this.distance += speed * dt;
+        this.stamina = Math.max(0, this.stamina - (sprint ? 26 : 6) * dt);
       } else {
+        this.stillTime += dt;
         this.stamina = Math.min(100, this.stamina + 16 * dt);
       }
+    } else {
+      this.stillTime += dt;
     }
 
-    if (this.hiding) this.prompt = "Press E to step out of hiding";
+    this.inSafe = this.world.isSafe(this.x, this.z);
+
+    if (doorNote) this.prompt = doorNote;
+    else if (closedDoor && !this.hiding) this.prompt = "Press E to try the door";
+    else if (this.hiding) this.prompt = "Press E to step out of hiding";
     else if (this.world.isExit(this.x, this.z)) this.prompt = "Press E to escape";
     else if (this.world.isHide(this.x, this.z)) this.prompt = "Press E to hide in the dark";
+    else if (this.inSafe) this.prompt = "This room feels still";
     else this.prompt = "";
 
     this.syncCamera();
@@ -135,7 +156,8 @@ export class Player {
       this.world.isOpen(x + radius, z) &&
       this.world.isOpen(x - radius, z) &&
       this.world.isOpen(x, z + radius) &&
-      this.world.isOpen(x, z - radius)
+      this.world.isOpen(x, z - radius) &&
+      !this.world.blocked(x, z)
     );
   }
 

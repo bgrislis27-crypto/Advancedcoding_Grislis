@@ -9,6 +9,7 @@
   <body>
     <canvas id="game" aria-label="Backrooms hallways"></canvas>
     <div class="vignette"></div>
+    <div id="fear"></div>
 
     <div id="start" class="screen">
       <div class="card">
@@ -18,7 +19,7 @@
           The halls are random. A creature is searching. Hide in the dark corners,
           and reach the green exit before it catches you.
         </p>
-        <p class="controls">Mouse to look · WASD to move · Shift to run · E to hide or escape</p>
+        <p class="controls">Mouse to look · WASD to move · Shift to run · F flashlight · E to hide, open a door, or escape</p>
         <button id="start-btn" type="button">Enter</button>
       </div>
     </div>
@@ -26,6 +27,9 @@
     <div id="hud" class="hud is-hidden">
       <p id="timer" class="timer">0:00</p>
       <p id="prompt" class="prompt"></p>
+      <div class="battery" aria-label="Flashlight battery">
+        <div id="battery-fill"></div>
+      </div>
       <div class="stamina" aria-label="Stamina">
         <div id="stamina-fill"></div>
       </div>
