@@ -15,6 +15,7 @@ export class Player {
     this.walkSpeed = 3.3;
     this.runSpeed = 6.1;
     this.stamina = 100;
+    this.sprintDrain = 26;
     this.hiding = false;
     this.moving = false;
     this.running = false;
@@ -119,7 +120,7 @@ export class Player {
         this.speed = speed;
         this.stillTime = 0;
         this.distance += speed * dt;
-        this.stamina = Math.max(0, this.stamina - (sprint ? 26 : 6) * dt);
+        this.stamina = Math.max(0, this.stamina - (sprint ? this.sprintDrain : 6) * dt);
       } else {
         this.stillTime += dt;
         this.stamina = Math.min(100, this.stamina + 16 * dt);

@@ -6,6 +6,7 @@ export class Fear {
   constructor(world) {
     this.world = world;
     this.level = 0;
+    this.darkGain = 4;
     this.overlay = document.getElementById("fear");
     this.canvas = document.getElementById("game");
   }
@@ -26,7 +27,7 @@ export class Fear {
     const dark = !flashlight.isLit() && !this.nearLight(player);
     player.inDark = dark;
 
-    if (dark) this.level = Math.min(100, this.level + 4 * dt);
+    if (dark) this.level = Math.min(100, this.level + this.darkGain * dt);
     if (creature.mesh.visible && creature.distance < 12) this.level = Math.min(100, this.level + 5 * dt);
     if (player.inSafe) this.level = Math.max(0, this.level - 10 * dt);
     else this.level = Math.max(0, this.level - 0.35 * dt);

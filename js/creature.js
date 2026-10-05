@@ -20,6 +20,12 @@ export class Creature {
     this.distance = 99;
     this.caughtPlayer = false;
     this.mode = "classic";
+    this.chaseSpeed = 2.7;
+    this.angerGain = 1.6;
+    this.catchDistance = 1.15;
+    this.loseChase = 3.5;
+    this.chaseChance = 0.15;
+    this.deafChase = 0.04;
     this.mesh = this.buildMesh();
     this.mesh.visible = false;
     scene.add(this.mesh);
@@ -115,7 +121,7 @@ export class Creature {
     const looked = this.mesh.visible && lookingAt(player, this.x, this.z, 0.35);
     this.timer -= dt;
 
-    if (!deaf && player.running && this.distance < 22) this.agitation = Math.min(12, this.agitation + dt * 1.6);
+    if (!deaf && player.running && this.distance < 22) this.agitation = Math.min(12, this.agitation + dt * this.angerGain);
     else this.agitation = Math.max(0, this.agitation - dt * 0.35);
 
     // Looking at it can make it leave, unless it has already started a chase.
@@ -124,10 +130,10 @@ export class Creature {
       return;
     }
 
-    if (!deaf && this.state !== "chasing" && this.agitation > 7 && sees && Math.random() < dt * 0.15) {
+    if (!deaf && this.state !== "chasing" && this.agitation > 7 && sees && Math.random() < dt * this.chaseChance) {
       this.enter("chasing");
     }
-    if (deaf && this.state !== "chasing" && sees && this.distance < 8 && Math.random() < dt * 0.04) {
+    if (deaf && this.state !== "chasing" && sees && this.distance < 8 && Math.random() < dt * this.deafChase) {
       this.enter("chasing");
     }
 
@@ -159,9 +165,9 @@ export class Creature {
       this.mesh.visible = true;
       if (sees) this.lost = 0;
       else this.lost += dt;
-      this.stepToward(playerCell, 2.7, dt);
-      if (this.distance < 1.15 && !player.hiding) this.caughtPlayer = true;
-      if (this.lost > 3.5) this.enter("hidden");
+      this.stepToward(playerCell, this.chaseSpeed, dt);
+      if (this.distance < this.catchDistance && !player.hiding) this.caughtPlayer = true;
+      if (this.lost > this.loseChase) this.enter("hidden");
     }
 
     this.mesh.position.set(this.x, 0, this.z);

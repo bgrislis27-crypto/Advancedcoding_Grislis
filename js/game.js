@@ -69,6 +69,7 @@ export class Game {
     this.hud = new Hud();
     this.state = "menu";
     this.mode = "classic";
+    this.difficulty = "normal";
     this.time = 0;
     this.last = 0;
     this.prepareMenu();
@@ -83,6 +84,9 @@ export class Game {
     document.getElementById("more-settings").addEventListener("click", () => this.showMenu("menu-settings"));
     for (const button of document.querySelectorAll(".mode-btn")) {
       button.addEventListener("click", () => this.pickMode(button.dataset.mode));
+    }
+    for (const button of document.querySelectorAll(".diff-btn")) {
+      button.addEventListener("click", () => this.pickDifficulty(button.dataset.difficulty));
     }
     document.getElementById("win-btn").addEventListener("click", () => location.reload());
     document.getElementById("lose-btn").addEventListener("click", () => location.reload());
@@ -112,24 +116,57 @@ export class Game {
 
   pickMode(mode) {
     this.mode = mode;
-    const names = {
-      classic: "CLASSIC MODE",
-      deaf: "DEAF MODE",
-      free: "FREE MODE",
-    };
     const notes = {
       classic: "THE ENTITY CAN HEAR YOU.",
       deaf: "NO SOUND. THE ENTITY CANNOT HEAR YOUR STEPS.",
       free: "WANDER. NOTHING CHASES YOU.",
     };
-    document.getElementById("mode-label").textContent = names[mode];
     document.getElementById("mode-note").textContent = notes[mode];
     for (const button of document.querySelectorAll(".mode-btn")) {
       button.classList.toggle("is-picked", button.dataset.mode === mode);
     }
+    this.showChoice();
+  }
+
+  pickDifficulty(difficulty) {
+    this.difficulty = difficulty;
+    const notes = {
+      easy: "THE ENTITY IS SLOWER. YOU CAN RUN LONGER.",
+      normal: "A FAIR HUNT.",
+      hard: "IT IS FASTER, AND YOUR LIGHT FADES SOONER.",
+    };
+    document.getElementById("diff-note").textContent = notes[difficulty];
+    for (const button of document.querySelectorAll(".diff-btn")) {
+      button.classList.toggle("is-picked", button.dataset.difficulty === difficulty);
+    }
+    this.showChoice();
+  }
+
+  showChoice() {
+    const modes = { classic: "CLASSIC", deaf: "DEAF", free: "FREE" };
+    const levels = { easy: "EASY", normal: "NORMAL", hard: "HARD" };
+    document.getElementById("mode-label").textContent = `${modes[this.mode]} · ${levels[this.difficulty]}`;
+  }
+
+  applyDifficulty() {
+    const tune = {
+      easy: { chase: 2.0, anger: 0.9, catch: 0.9, lose: 2.2, chance: 0.07, deaf: 0.02, stamina: 16, battery: 2.1, fear: 2.2 },
+      normal: { chase: 2.7, anger: 1.6, catch: 1.15, lose: 3.5, chance: 0.15, deaf: 0.04, stamina: 26, battery: 3.2, fear: 4 },
+      hard: { chase: 3.5, anger: 2.5, catch: 1.35, lose: 5.5, chance: 0.28, deaf: 0.08, stamina: 38, battery: 4.8, fear: 6.5 },
+    }[this.difficulty];
+    this.creature.chaseSpeed = tune.chase;
+    this.creature.angerGain = tune.anger;
+    this.creature.catchDistance = tune.catch;
+    this.creature.loseChase = tune.lose;
+    this.creature.chaseChance = tune.chance;
+    this.creature.deafChase = tune.deaf;
+    this.player.sprintDrain = tune.stamina;
+    this.flashlight.drainRate = tune.battery;
+    this.fear.darkGain = tune.fear;
   }
 
   enter() {
+    this.applyDifficulty();
     this.creature.mode = this.mode;
     this.scare.mode = this.mode;
     this.state = "play";

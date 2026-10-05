@@ -8,6 +8,7 @@ export class Flashlight {
     this.battery = 100;
     this.deadTime = 0;
     this.base = light.intensity;
+    this.drainRate = 3.2;
   }
 
   isLit() {
@@ -28,7 +29,7 @@ export class Flashlight {
     }
 
     if (this.on && this.battery > 0) {
-      const drain = player.running ? 5 : 3.2;
+      const drain = player.running ? this.drainRate * 1.56 : this.drainRate;
       this.battery = Math.max(0, this.battery - drain * dt);
       const low = this.battery < 28;
       const blink = low && Math.random() < 0.12 ? 0.12 : 1;

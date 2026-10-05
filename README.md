@@ -24,11 +24,14 @@ From this folder:
 python3 -m http.server 8000
 ```
 
-Open [http://localhost:8000](http://localhost:8000) and click **Wake Up**. **More Options** lets you pick a mode first.
+Open [http://localhost:8000](http://localhost:8000) and click **Wake Up**. **More Options** lets you pick a mode and a difficulty first.
 
 - **Classic** — the full game. The entity can hear you.
 - **Deaf** — no sound. Footsteps do not call the entity.
 - **Free** — wander the halls. Nothing chases you.
+- **Easy** — the entity is slower, and sprint and the flashlight last longer.
+- **Normal** — the usual hunt.
+- **Hard** — the entity is faster, sprint drains quicker, and the battery fades sooner.
 
 ## Controls
 
