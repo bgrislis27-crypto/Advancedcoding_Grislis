@@ -19,6 +19,7 @@ export class Creature {
     this.lost = 0;
     this.distance = 99;
     this.caughtPlayer = false;
+    this.mode = "classic";
     this.mesh = this.buildMesh();
     this.mesh.visible = false;
     scene.add(this.mesh);
@@ -48,8 +49,9 @@ export class Creature {
     if (state === "wandering") this.goal = this.randomCell();
   }
 
-  // A sound gives it a place to investigate.
+  // A sound gives it a place to investigate. Deaf and free mode ignore sound.
   hear(x, z) {
+    if (this.mode !== "classic") return;
     this.goal = this.world.cellAt(x, z);
     if (this.state === "hidden" || this.state === "wandering" || this.state === "watching") {
       this.enter("investigating");
@@ -98,6 +100,14 @@ export class Creature {
   }
 
   update(dt, player) {
+    if (this.mode === "free") {
+      this.state = "hidden";
+      this.mesh.visible = false;
+      this.caughtPlayer = false;
+      return;
+    }
+
+    const deaf = this.mode === "deaf";
     const playerCell = this.world.cellAt(player.x, player.z);
     const myCell = this.world.cellAt(this.x, this.z);
     this.distance = Math.hypot(player.x - this.x, player.z - this.z);
@@ -105,7 +115,7 @@ export class Creature {
     const looked = this.mesh.visible && lookingAt(player, this.x, this.z, 0.35);
     this.timer -= dt;
 
-    if (player.running && this.distance < 22) this.agitation = Math.min(12, this.agitation + dt * 1.6);
+    if (!deaf && player.running && this.distance < 22) this.agitation = Math.min(12, this.agitation + dt * 1.6);
     else this.agitation = Math.max(0, this.agitation - dt * 0.35);
 
     // Looking at it can make it leave, unless it has already started a chase.
@@ -114,13 +124,16 @@ export class Creature {
       return;
     }
 
-    if (this.state !== "chasing" && this.agitation > 7 && sees && Math.random() < dt * 0.15) {
+    if (!deaf && this.state !== "chasing" && this.agitation > 7 && sees && Math.random() < dt * 0.15) {
+      this.enter("chasing");
+    }
+    if (deaf && this.state !== "chasing" && sees && this.distance < 8 && Math.random() < dt * 0.04) {
       this.enter("chasing");
     }
 
     if (this.state === "hidden") {
       this.mesh.visible = false;
-      if (player.running && this.distance < 18) this.enter("investigating");
+      if (!deaf && player.running && this.distance < 18) this.enter("investigating");
       else if (this.timer <= 0) this.enter(Math.random() < 0.5 ? "watching" : "wandering");
     } else if (this.state === "watching") {
       this.watchFrom(player);
@@ -130,7 +143,7 @@ export class Creature {
     } else if (this.state === "wandering") {
       this.mesh.visible = this.distance < 18;
       if (this.goal) this.stepToward(this.goal, 1.1, dt);
-      if (player.running) this.enter("investigating");
+      if (!deaf && player.running) this.enter("investigating");
       else if (this.timer <= 0) this.enter("hidden");
     } else if (this.state === "investigating") {
       this.mesh.visible = this.distance < 20;

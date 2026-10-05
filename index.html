@@ -23,6 +23,7 @@
           <button id="start-btn" type="button">WAKE UP</button>
           <button id="settings-btn" type="button">SETTINGS</button>
           <button id="more-btn" type="button">MORE OPTIONS</button>
+          <p id="mode-label" class="menu-note">CLASSIC MODE</p>
         </div>
 
         <div id="menu-settings" class="menu-list is-hidden">
@@ -31,10 +32,21 @@
           <button id="settings-back" type="button">BACK</button>
         </div>
 
-        <div id="menu-more" class="menu-list is-hidden">
-          <p class="menu-label">MORE OPTIONS</p>
-          <p class="menu-note">THERE IS NO MAP.<br />FIND THE GREEN EXIT.<br />EACH VISIT BUILDS A NEW MAZE.</p>
-          <button id="more-back" type="button">BACK</button>
+        <div id="menu-more" class="menu-columns is-hidden">
+          <div class="menu-list">
+            <p class="menu-label">MAIN MENU</p>
+            <button id="more-wake" type="button">WAKE UP</button>
+            <button id="more-back" type="button">BACK</button>
+            <button id="more-settings" type="button">SETTINGS</button>
+            <button id="more-stay" type="button">MORE OPTIONS</button>
+          </div>
+          <div class="menu-list">
+            <p class="menu-label">GAME MODE</p>
+            <button class="mode-btn is-picked" type="button" data-mode="classic">CLASSIC MODE</button>
+            <button class="mode-btn" type="button" data-mode="deaf">DEAF MODE</button>
+            <button class="mode-btn" type="button" data-mode="free">FREE MODE</button>
+            <p id="mode-note" class="menu-note">THE ENTITY CAN HEAR YOU.</p>
+          </div>
         </div>
       </div>
       <p class="headphones">HEADPHONES ARE RECOMMENDED</p>

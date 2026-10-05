@@ -5,6 +5,7 @@ import * as THREE from "three";
 export class Jumpscare {
   constructor(camera, audio) {
     this.audio = audio;
+    this.mode = "classic";
     this.cooldown = 70;
     this.left = 0;
     this.ready = false;
@@ -26,6 +27,7 @@ export class Jumpscare {
   }
 
   update(dt, fear, events, creature) {
+    if (this.mode === "free") return;
     this.cooldown -= dt;
     if (this.left > 0) {
       this.left -= dt;

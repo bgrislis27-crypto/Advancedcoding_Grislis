@@ -68,6 +68,7 @@ export class Game {
     );
     this.hud = new Hud();
     this.state = "menu";
+    this.mode = "classic";
     this.time = 0;
     this.last = 0;
     this.prepareMenu();
@@ -78,6 +79,11 @@ export class Game {
     document.getElementById("more-btn").addEventListener("click", () => this.showMenu("menu-more"));
     document.getElementById("settings-back").addEventListener("click", () => this.showMenu("menu-main"));
     document.getElementById("more-back").addEventListener("click", () => this.showMenu("menu-main"));
+    document.getElementById("more-wake").addEventListener("click", () => this.enter());
+    document.getElementById("more-settings").addEventListener("click", () => this.showMenu("menu-settings"));
+    for (const button of document.querySelectorAll(".mode-btn")) {
+      button.addEventListener("click", () => this.pickMode(button.dataset.mode));
+    }
     document.getElementById("win-btn").addEventListener("click", () => location.reload());
     document.getElementById("lose-btn").addEventListener("click", () => location.reload());
     canvas.addEventListener("click", () => {
@@ -98,12 +104,34 @@ export class Game {
   }
 
   showMenu(id) {
+    document.querySelector(".menu-wrap").classList.toggle("is-wide", id === "menu-more");
     for (const name of ["menu-main", "menu-settings", "menu-more"]) {
       document.getElementById(name).classList.toggle("is-hidden", name !== id);
     }
   }
 
+  pickMode(mode) {
+    this.mode = mode;
+    const names = {
+      classic: "CLASSIC MODE",
+      deaf: "DEAF MODE",
+      free: "FREE MODE",
+    };
+    const notes = {
+      classic: "THE ENTITY CAN HEAR YOU.",
+      deaf: "NO SOUND. THE ENTITY CANNOT HEAR YOUR STEPS.",
+      free: "WANDER. NOTHING CHASES YOU.",
+    };
+    document.getElementById("mode-label").textContent = names[mode];
+    document.getElementById("mode-note").textContent = notes[mode];
+    for (const button of document.querySelectorAll(".mode-btn")) {
+      button.classList.toggle("is-picked", button.dataset.mode === mode);
+    }
+  }
+
   enter() {
+    this.creature.mode = this.mode;
+    this.scare.mode = this.mode;
     this.state = "play";
     this.renderer.toneMappingExposure = 1.05;
     this.scene.fog.density = 0.06;
@@ -114,7 +142,7 @@ export class Game {
     this.player.syncCamera();
     this.hud.show();
     this.input.lock();
-    this.audio.start();
+    if (this.mode !== "deaf") this.audio.start();
   }
 
   resize() {

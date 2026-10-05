@@ -24,7 +24,11 @@ From this folder:
 python3 -m http.server 8000
 ```
 
-Open [http://localhost:8000](http://localhost:8000) and click **Wake Up**.
+Open [http://localhost:8000](http://localhost:8000) and click **Wake Up**. **More Options** lets you pick a mode first.
+
+- **Classic** — the full game. The entity can hear you.
+- **Deaf** — no sound. Footsteps do not call the entity.
+- **Free** — wander the halls. Nothing chases you.
 
 ## Controls
 

@@ -85,6 +85,34 @@ body:has(.menu-screen:not(.is-hidden)) .vignette {
   margin: 0 auto;
 }
 
+.menu-wrap.is-wide {
+  width: min(820px, calc(100% - 24px));
+}
+
+.menu-columns {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 18px 28px;
+  width: min(760px, 100%);
+  margin: 0 auto;
+}
+
+.menu-columns .menu-list {
+  width: min(300px, 100%);
+  padding: 8px 12px 4px;
+  background: rgba(12, 10, 6, 0.46);
+}
+
+.mode-btn.is-picked {
+  color: #fff;
+}
+
+.mode-btn.is-picked::before {
+  height: 2px;
+  background: #fff;
+}
+
 .menu-label,
 .menu-list button {
   position: relative;
