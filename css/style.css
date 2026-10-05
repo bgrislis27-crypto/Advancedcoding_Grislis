@@ -34,6 +34,14 @@ body {
   background: radial-gradient(circle at center, transparent 42%, rgba(0, 0, 0, 0.75) 100%);
 }
 
+#blackout {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: #000;
+}
+
 .screen {
   position: absolute;
   inset: 0;

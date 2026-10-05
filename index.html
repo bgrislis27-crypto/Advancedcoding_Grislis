@@ -13,6 +13,7 @@
     <canvas id="game" aria-label="Backrooms hallways"></canvas>
     <div class="vignette"></div>
     <div id="fear"></div>
+    <div id="blackout"></div>
 
     <div id="start" class="screen menu-screen">
       <div class="menu-wrap">
@@ -45,14 +46,14 @@
             <button class="mode-btn is-picked" type="button" data-mode="classic">CLASSIC MODE</button>
             <button class="mode-btn" type="button" data-mode="deaf">DEAF MODE</button>
             <button class="mode-btn" type="button" data-mode="free">FREE MODE</button>
-            <p id="mode-note" class="menu-note">THE ENTITY CAN HEAR YOU.</p>
+            <p id="mode-note" class="menu-note">THE LIGHTS CUT OUT AT RANDOM.</p>
           </div>
           <div class="menu-list">
             <p class="menu-label">DIFFICULTY</p>
             <button class="diff-btn" type="button" data-difficulty="easy">EASY</button>
             <button class="diff-btn is-picked" type="button" data-difficulty="normal">NORMAL</button>
             <button class="diff-btn" type="button" data-difficulty="hard">HARD</button>
-            <p id="diff-note" class="menu-note">A FAIR HUNT.</p>
+            <p id="diff-note" class="menu-note">THREE MINUTES. A FAIR PACE.</p>
           </div>
         </div>
       </div>
@@ -64,7 +65,7 @@
         <svg class="smile" viewBox="0 0 86 30" aria-hidden="true">
           <path id="smile-arc" d="M8 8 Q43 26 78 8" fill="none" stroke="#9fd8ea" stroke-width="3" stroke-linecap="round" />
         </svg>
-        <p id="timer" class="timer">0:00</p>
+        <p id="timer" class="timer">3:00</p>
       </div>
       <p id="prompt" class="prompt"></p>
       <div class="battery" aria-label="Flashlight battery">
@@ -86,8 +87,8 @@
 
     <div id="lose" class="screen is-hidden">
       <div class="card danger">
-        <p class="kicker">Caught</p>
-        <h1>It found you</h1>
+        <p class="kicker">Out of time</p>
+        <h1>The clock ran out</h1>
         <p id="lose-time"></p>
         <button id="lose-btn" type="button">Try again</button>
       </div>

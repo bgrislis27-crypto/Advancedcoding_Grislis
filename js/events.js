@@ -4,7 +4,7 @@
 const KINDS = ["light", "sound", "door", "object", "shadow", "patch"];
 
 export class HorrorEvents {
-  constructor(audio, changes, watcher, cameraFx, fear, flashlight, creature) {
+  constructor(audio, changes, watcher, cameraFx, fear, flashlight, creature, darkness) {
     this.audio = audio;
     this.changes = changes;
     this.watcher = watcher;
@@ -12,6 +12,7 @@ export class HorrorEvents {
     this.fear = fear;
     this.flashlight = flashlight;
     this.creature = creature;
+    this.darkness = darkness;
     this.wait = 20 + Math.random() * 20;
     this.last = "";
     this.since = 999;
@@ -39,7 +40,10 @@ export class HorrorEvents {
       if (moved) this.cameraFx.addShake(0.25);
       return moved;
     }
-    if (kind === "shadow") return this.watcher.tryAppear(player);
+    if (kind === "shadow") {
+      if (this.darkness) this.darkness.flash(0.45 + Math.random() * 0.35);
+      return true;
+    }
     if (kind === "patch") return this.changes.markHall(player);
     return false;
   }

@@ -17,6 +17,7 @@ import { Flashlight } from "./flashlight.js";
 import { Hallucination } from "./hallucination.js";
 import { TimeWarp } from "./timewarp.js";
 import { Jumpscare } from "./scare.js";
+import { Darkness } from "./darkness.js";
 
 // Builds the 3D Backrooms and runs the timer, creature, and win / lose checks.
 
@@ -64,12 +65,15 @@ export class Game {
       this.cameraFx,
       this.fear,
       this.flashlight,
-      this.creature
+      this.creature,
+      this.darkness
     );
     this.hud = new Hud();
     this.state = "menu";
     this.mode = "classic";
     this.difficulty = "normal";
+    this.limit = 180;
+    this.darkness = new Darkness();
     this.time = 0;
     this.last = 0;
     this.prepareMenu();
@@ -117,9 +121,9 @@ export class Game {
   pickMode(mode) {
     this.mode = mode;
     const notes = {
-      classic: "THE ENTITY CAN HEAR YOU.",
-      deaf: "NO SOUND. THE ENTITY CANNOT HEAR YOUR STEPS.",
-      free: "WANDER. NOTHING CHASES YOU.",
+      classic: "THE LIGHTS CUT OUT AT RANDOM.",
+      deaf: "NO SOUND. THE LIGHTS STILL CUT OUT.",
+      free: "FEWER FLASHES. THE CLOCK STILL RUNS.",
     };
     document.getElementById("mode-note").textContent = notes[mode];
     for (const button of document.querySelectorAll(".mode-btn")) {
@@ -131,9 +135,9 @@ export class Game {
   pickDifficulty(difficulty) {
     this.difficulty = difficulty;
     const notes = {
-      easy: "THE ENTITY IS SLOWER. YOU CAN RUN LONGER.",
-      normal: "A FAIR HUNT.",
-      hard: "IT IS FASTER, AND YOUR LIGHT FADES SOONER.",
+      easy: "THE DARKNESS COMES LESS OFTEN.",
+      normal: "THREE MINUTES. A FAIR PACE.",
+      hard: "THE DARKNESS COMES MORE OFTEN.",
     };
     document.getElementById("diff-note").textContent = notes[difficulty];
     for (const button of document.querySelectorAll(".diff-btn")) {
@@ -163,6 +167,8 @@ export class Game {
     this.player.sprintDrain = tune.stamina;
     this.flashlight.drainRate = tune.battery;
     this.fear.darkGain = tune.fear;
+    const pace = { easy: 0.55, normal: 1, hard: 1.75 };
+    this.darkness.rate = pace[this.difficulty] * (this.mode === "free" ? 0.45 : 1);
   }
 
   enter() {
@@ -206,6 +212,7 @@ export class Game {
     if (this.state !== "play") return;
 
     this.time += dt;
+    const left = Math.max(0, this.limit - this.time);
     this.player.update(dt, this.input);
     this.flashlight.update(dt, this.input, this.player);
     this.doors.update(this.player);
@@ -213,22 +220,18 @@ export class Game {
       this.finish("won");
       return;
     }
-
-    this.creature.update(dt, this.player);
-    if (this.creature.caughtPlayer) {
+    if (left <= 0) {
       this.finish("lost");
       return;
     }
 
-    this.watcher.update(dt, this.player);
     this.events.update(dt, this.player);
     const fearLevel = this.fear.update(dt, this.player, this.flashlight, this.creature);
     this.cameraFx.update(dt, this.player, fearLevel);
-    this.hallucination.update(dt, this.player, this.fear);
     this.timewarp.update(this.player, this.changes, this.world);
-    this.scare.update(dt, this.fear, this.events, this.creature);
     this.lighting.setFear(fearLevel);
-    this.hud.update(this.player, this.time, this.player.prompt, this.flashlight.battery);
+    this.darkness.update(dt);
+    this.hud.update(this.player, left, this.player.prompt, this.flashlight.battery);
     this.audio.setFear(fearLevel);
     this.audio.update(dt, this.player, this.lighting);
   }
@@ -237,7 +240,8 @@ export class Game {
     this.state = result;
     document.exitPointerLock();
     this.audio.stop();
-    if (result === "won") this.hud.showWin(this.time);
-    else this.hud.showLose(this.time);
+    const left = Math.max(0, this.limit - this.time);
+    if (result === "won") this.hud.showWin(left);
+    else this.hud.showLose(left);
   }
 }

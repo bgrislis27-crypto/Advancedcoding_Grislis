@@ -1,6 +1,6 @@
 # Backrooms
 
-A first-person 3D maze. The hallways are yellow, the lights flicker, and a creature searches for you. Find the green **EXIT** before it catches you.
+A first-person 3D maze. The hallways are yellow, the lights flicker, and the picture can go black for a moment. Find the green **EXIT** before the three minutes run out.
 
 This is a browser game made with **Three.js**. No extra install is needed.
 
@@ -26,12 +26,12 @@ python3 -m http.server 8000
 
 Open [http://localhost:8000](http://localhost:8000) and click **Wake Up**. **More Options** lets you pick a mode and a difficulty first.
 
-- **Classic** — the full game. The entity can hear you.
-- **Deaf** — no sound. Footsteps do not call the entity.
-- **Free** — wander the halls. Nothing chases you.
-- **Easy** — the entity is slower, and sprint and the flashlight last longer.
-- **Normal** — the usual hunt.
-- **Hard** — the entity is faster, sprint drains quicker, and the battery fades sooner.
+- **Classic** — the lights cut out at random. You have three minutes.
+- **Deaf** — no sound. The lights still cut out.
+- **Free** — fewer flashes. The clock still runs.
+- **Easy** — the darkness comes less often. Sprint and the flashlight last longer.
+- **Normal** — a fair three minutes.
+- **Hard** — the darkness comes more often, and the battery fades sooner.
 
 ## Controls
 
@@ -57,7 +57,8 @@ There is no map. A few signs name the kind of place you are in. The halls connec
 | `js/lighting.js` | Flicker and blackouts for each ceiling light |
 | `js/player.js` | Walking, running, stamina, hiding, doors, and the exit |
 | `js/camera.js` | Head bob, sway, and a small shake after a scare |
-| `js/creature.js` | Entity states: hidden, watching, wandering, investigating, approaching, chasing |
+| `js/creature.js` | Old entity code. The game no longer shows it |
+| `js/darkness.js` | Random flashes that black out the picture |
 | `js/watcher.js` | A rare shadow at the end of a hallway |
 | `js/doors.js` | Doors that open, stay locked, lead somewhere else, or vanish |
 | `js/flashlight.js` | Flashlight battery, flicker, and short malfunctions |

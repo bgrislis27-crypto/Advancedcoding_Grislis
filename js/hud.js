@@ -40,12 +40,12 @@ export class Hud {
   showWin(time) {
     this.hud.classList.add("is-hidden");
     this.win.classList.remove("is-hidden");
-    this.winTime.textContent = `Escaped in ${formatTime(time)}`;
+    this.winTime.textContent = `Escaped with ${formatTime(time)} left`;
   }
 
-  showLose(time) {
+  showLose() {
     this.hud.classList.add("is-hidden");
     this.lose.classList.remove("is-hidden");
-    this.loseTime.textContent = `Survived ${formatTime(time)}`;
+    this.loseTime.textContent = "The three minutes ran out";
   }
 }
