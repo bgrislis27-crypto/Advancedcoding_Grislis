@@ -60,7 +60,12 @@
     </div>
 
     <div id="hud" class="hud is-hidden">
-      <p id="timer" class="timer">0:00</p>
+      <div class="smile-hud">
+        <svg class="smile" viewBox="0 0 86 30" aria-hidden="true">
+          <path id="smile-arc" d="M8 8 Q43 26 78 8" fill="none" stroke="#9fd8ea" stroke-width="3" stroke-linecap="round" />
+        </svg>
+        <p id="timer" class="timer">0:00</p>
+      </div>
       <p id="prompt" class="prompt"></p>
       <div class="battery" aria-label="Flashlight battery">
         <div id="battery-fill"></div>

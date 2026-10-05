@@ -13,6 +13,7 @@ export class Hud {
     this.win = document.getElementById("win");
     this.lose = document.getElementById("lose");
     this.timer = document.getElementById("timer");
+    this.smile = document.getElementById("smile-arc");
     this.stamina = document.getElementById("stamina-fill");
     this.battery = document.getElementById("battery-fill");
     this.prompt = document.getElementById("prompt");
@@ -27,6 +28,10 @@ export class Hud {
 
   update(player, time, prompt, battery = 100) {
     this.timer.textContent = formatTime(time);
+    if (this.smile) {
+      const dip = 14 + (player.stamina / 100) * 14;
+      this.smile.setAttribute("d", `M8 8 Q43 ${dip} 78 8`);
+    }
     this.stamina.style.width = `${player.stamina}%`;
     if (this.battery) this.battery.style.width = `${battery}%`;
     this.prompt.textContent = prompt;

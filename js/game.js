@@ -170,11 +170,11 @@ export class Game {
     this.creature.mode = this.mode;
     this.scare.mode = this.mode;
     this.state = "play";
-    this.renderer.toneMappingExposure = 1.05;
-    this.scene.fog.density = 0.06;
-    this.scene.fog.color.set(0x2a2416);
-    this.scene.background.set(0x1a160e);
-    this.world.ambient.intensity = 0.2;
+    this.renderer.toneMappingExposure = 1.22;
+    this.scene.fog.density = 0.02;
+    this.scene.fog.color.set(0xd2c07a);
+    this.scene.background.set(0xd2c07a);
+    this.world.ambient.intensity = this.world.baseAmbient;
     this.player.pitch = -0.08;
     this.player.syncCamera();
     this.hud.show();

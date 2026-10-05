@@ -41,8 +41,9 @@ export class Fear {
         : "";
     }
 
-    if (this.world.ambient) this.world.ambient.intensity = 0.2 * (1 - amount * 0.7);
-    if (this.world.scene.fog) this.world.scene.fog.density = 0.06 + amount * 0.045;
+    const base = this.world.baseAmbient || 0.72;
+    if (this.world.ambient) this.world.ambient.intensity = base * (1 - amount * 0.55);
+    if (this.world.scene.fog) this.world.scene.fog.density = 0.02 + amount * 0.035;
     return this.level;
   }
 }
