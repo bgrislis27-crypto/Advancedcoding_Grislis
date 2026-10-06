@@ -89,15 +89,42 @@
         border: 1px solid var(--line);
       }
 
-      figure { margin: 36px auto 8px; width: min(980px, calc(100% - 8vw)); }
+      figure { margin: 0; }
 
-      img { display: block; width: 100%; height: auto; border-radius: 8px; }
+      img { display: block; width: 100%; height: auto; }
+
+      .shot {
+        width: min(1080px, calc(100% - 8vw));
+        margin: 36px auto 8px;
+      }
+
+      .shot img,
+      .split img {
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        box-shadow: 0 22px 60px rgba(0, 0, 0, 0.38);
+      }
 
       figcaption {
-        margin-top: 10px;
+        margin-top: 12px;
         color: var(--muted);
-        font: 14px/1.4 "Fruktur", Georgia, serif;
+        font: 15px/1.45 "Fruktur", Georgia, serif;
       }
+
+      .split {
+        display: grid;
+        grid-template-columns: minmax(260px, 0.85fr) minmax(0, 1.2fr);
+        gap: 42px;
+        align-items: center;
+        width: min(1080px, calc(100% - 8vw));
+        margin: 0 auto;
+        padding: 64px 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .split h2 { margin-top: 0; }
+
+      .split p { color: var(--muted); }
 
       section { padding: 48px 0; border-top: 1px solid var(--line); }
 
@@ -136,7 +163,8 @@
         border-top: 1px solid var(--line);
       }
 
-      @media (max-width: 640px) {
+      @media (max-width: 800px) {
+        .split { grid-template-columns: 1fr; padding: 40px 0; }
         .rows div { grid-template-columns: 1fr; gap: 4px; }
         .bar { padding: 12px 5vw; }
       }
@@ -147,6 +175,7 @@
       <strong>The Backrooms</strong>
       <nav>
         <a href="#play">Play</a>
+        <a href="#look">Look</a>
         <a href="#controls">Controls</a>
         <a href="#code">Code</a>
       </nav>
@@ -166,31 +195,29 @@
         </div>
       </div>
 
-      <figure>
-        <img src="https://raw.githubusercontent.com/bgrislis27-crypto/Advancedcoding_Grislis/main/images/start-menu.jpg" alt="More Options open, with Classic, Deaf, and Free mode beside the main menu" />
-        <figcaption class="wrap">More Options is where you choose a mode and a difficulty. Wake Up starts that hunt.</figcaption>
+      <figure class="shot">
+        <img src="https://raw.githubusercontent.com/bgrislis27-crypto/Advancedcoding_Grislis/main/images/menu-screen.jpg" alt="The start menu over a yellow hall, with Wake Up, game modes, and Easy, Normal, or Hard" />
+        <figcaption class="wrap">More Options opens beside the title. Pick Classic, Deaf, or Free, then Easy, Normal, or Hard. Wake Up starts that visit.</figcaption>
       </figure>
 
-      <figure>
-        <img src="https://raw.githubusercontent.com/bgrislis27-crypto/Advancedcoding_Grislis/main/images/hallway.jpg" alt="A yellow hallway with carpet, ceiling lights, and fog at the far end" />
-        <figcaption class="wrap">The view after you click Wake Up. Farther down the hall, the fog gets thicker and the light falls off.</figcaption>
-      </figure>
-
-      <section>
-        <div class="wrap">
-          <h2>What you do</h2>
+      <section class="split" id="look">
+        <div>
+          <p class="kicker">After you wake up</p>
+          <h2>Yellow paper, a tiled ceiling, and a clock</h2>
           <p>
-          Each visit builds a new maze. Halls turn, meet, loop, and end. They look
-          similar on purpose, so it is easy to lose your place. There is no map.
-          Run if you need to, hide in a dark corner, and press E at the green exit.
-          More Options lets you pick Classic, Deaf, or Free, and Easy, Normal, or Hard, before you wake up.
+            Each visit builds a new maze. The halls turn, meet, and end, and they look
+            alike on purpose. There is no map. The wallpaper repeats, the carpet is speckled,
+            and the fluorescent panels stay on until a flash of black.
           </p>
           <p>
-            The scares stay quiet. A light can go out behind you. A box can shift.
-            Every so often the whole picture goes black, then comes back.
-            You have three minutes to reach the exit.
+            The blue clock under the arc counts down from 3:00. Reach the green exit
+            before it hits zero. Run if you need to, try a door with E, and keep the flashlight charged.
           </p>
         </div>
+        <figure>
+          <img src="https://raw.githubusercontent.com/bgrislis27-crypto/Advancedcoding_Grislis/main/images/hall-clock.jpg" alt="A yellow hallway corner with ceiling light panels and the timer at 2:30" />
+          <figcaption>Halfway through. The lights are still on, and 2:30 remains.</figcaption>
+        </figure>
       </section>
 
       <section id="controls">
