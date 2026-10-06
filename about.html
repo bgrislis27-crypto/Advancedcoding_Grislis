@@ -45,7 +45,13 @@
 
       .bar strong { letter-spacing: 0.04em; }
 
-      .bar nav { display: flex; gap: 18px; font: 14px/1 "Fruktur", Georgia, serif; }
+      .bar nav {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 14px 18px;
+        font: 14px/1 "Fruktur", Georgia, serif;
+      }
 
       .bar a { color: var(--muted); text-decoration: none; }
 
@@ -148,6 +154,36 @@
 
       li { margin: 0 0 10px; }
 
+      ol.steps { margin: 8px 0 0; padding-left: 1.2em; }
+
+      ol.steps li { margin: 0 0 14px; }
+
+      ol.steps strong { color: var(--ink); font-weight: 400; }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+        margin: 8px 0 28px;
+      }
+
+      .card {
+        margin: 0;
+        padding: 16px 16px 14px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: rgba(230, 188, 78, 0.06);
+      }
+
+      .card h3 {
+        margin: 0 0 8px;
+        color: var(--yellow);
+        font-size: 20px;
+        font-weight: 400;
+      }
+
+      .card p { margin: 0; color: var(--muted); font-size: 16px; }
+
       table { width: 100%; border-collapse: collapse; font: 15px/1.4 "Fruktur", Georgia, serif; }
 
       th, td { text-align: left; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
@@ -166,6 +202,7 @@
       @media (max-width: 800px) {
         .split { grid-template-columns: 1fr; padding: 40px 0; }
         .rows div { grid-template-columns: 1fr; gap: 4px; }
+        .cards { grid-template-columns: 1fr; }
         .bar { padding: 12px 5vw; }
       }
     </style>
@@ -176,6 +213,8 @@
       <nav>
         <a href="#play">Play</a>
         <a href="#look">Look</a>
+        <a href="#visit">Visit</a>
+        <a href="#modes">Modes</a>
         <a href="#controls">Controls</a>
         <a href="#code">Code</a>
       </nav>
@@ -218,6 +257,111 @@
           <img src="https://raw.githubusercontent.com/bgrislis27-crypto/Advancedcoding_Grislis/main/images/hall-clock.jpg" alt="A yellow hallway corner with ceiling light panels and the timer at 2:30" />
           <figcaption>Halfway through. The lights are still on, and 2:30 remains.</figcaption>
         </figure>
+      </section>
+
+      <section id="visit">
+        <div class="wrap">
+          <p class="kicker">From the menu to the exit</p>
+          <h2>How a visit goes</h2>
+          <p>
+            The page opens on a still yellow hall. The title sits over it, and the lined
+            buttons are the only things you click. Headphones help, because the buzz and
+            the footsteps are part of finding your way.
+          </p>
+          <ol class="steps">
+            <li><strong>Choose a visit.</strong> More Options opens two extra columns. One is the game mode. One is the difficulty. The small line under the main menu shows the pair you picked, such as Classic · Normal.</li>
+            <li><strong>Wake up.</strong> Wake Up builds a new maze for that visit. Click the picture so the mouse can look around, then walk with W, A, S, and D.</li>
+            <li><strong>Keep moving.</strong> The halls repeat on purpose, and there is no map. A sign can name the kind of place you are in. Dead ends are dark enough to hide in. Offices feel still. Wet floors slow your steps.</li>
+            <li><strong>Leave, or run out of time.</strong> The green door is the exit. Stand at it and press E. The win screen says how much of the three minutes you had left. If the blue clock reaches 0:00 first, the visit ends with “The clock ran out.”</li>
+          </ol>
+          <p>
+            Shift spends stamina, so a sprint is a short burst and then a walk. F turns the
+            flashlight on and off. The gold bar is the battery. It drains while the light is
+            on, and it comes back while the light is off. A closed door in front of you asks
+            for E. Some of those doors open. Some stay shut.
+          </p>
+        </div>
+      </section>
+
+      <section id="modes">
+        <div class="wrap">
+          <p class="kicker">Before Wake Up</p>
+          <h2>Modes and difficulty</h2>
+          <p>
+            Mode and difficulty are separate. You can play Deaf on Easy, or Free on Hard.
+            The clock is three minutes in every combination. What changes is the sound,
+            how often the picture goes black, and how hard it is to keep running and to
+            keep the flashlight alive.
+          </p>
+          <div class="cards">
+            <article class="card">
+              <h3>Classic</h3>
+              <p>The usual visit. You hear the halls, and the lights cut out at random.</p>
+            </article>
+            <article class="card">
+              <h3>Deaf</h3>
+              <p>The same halls with no sound. The lights still cut out. You navigate by sight alone.</p>
+            </article>
+            <article class="card">
+              <h3>Free</h3>
+              <p>Fewer flashes of darkness. The clock still runs, so the exit is still a race.</p>
+            </article>
+          </div>
+          <div class="cards">
+            <article class="card">
+              <h3>Easy</h3>
+              <p>The darkness comes less often. Stamina lasts longer, and the flashlight drains more slowly. Standing in the dark unsettles you less.</p>
+            </article>
+            <article class="card">
+              <h3>Normal</h3>
+              <p>A fair pace. Three minutes, a normal sprint, and a battery that needs watching.</p>
+            </article>
+            <article class="card">
+              <h3>Hard</h3>
+              <p>The darkness comes more often. Sprinting empties the pale bar faster, and the gold battery falls faster too.</p>
+            </article>
+          </div>
+          <p>
+            Fear never has its own bar. In the dark the fog thickens a little and the edges
+            of the picture close in. A still office lets that settle. Nothing in the halls
+            is chasing you. The pressure is the clock, the blackouts, and the sameness of
+            the rooms.
+          </p>
+        </div>
+      </section>
+
+      <section>
+        <div class="wrap">
+          <p class="kicker">One maze, several kinds of room</p>
+          <h2>What the halls are made of</h2>
+          <p>
+            Each Wake Up runs a maze generator. It carves halls, opens a few rooms, and
+            adds loops so you can circle back. The start is near one corner. The exit is
+            a green door in a cell far from that start. You will not get the same layout twice.
+          </p>
+          <p>
+            The floor is divided into bands, so a long walk changes the kind of place
+            even when the wallpaper stays yellow.
+          </p>
+          <ul>
+            <li>Yellow halls are the first stretch, close to where you wake up.</li>
+            <li>Offices are quieter. Fear falls faster there, and the flashlight recovers a little faster if you leave it off.</li>
+            <li>Wet floors drag on your walk. The same key press covers less ground.</li>
+            <li>Maintenance sits along the far side. Stairs and empty rooms show up late in the maze. The last band is stranger, and the signs stop being helpful.</li>
+          </ul>
+          <p>
+            Doors are placed on some of the walls between cells. A normal door slides open.
+            A locked door tells you it is locked and stays in the way. An unexpected door
+            drops you into a different kind of room. A vanishing door is there while you
+            look at it, and gone if you turn away. Locked doors are kept off the start
+            column and off the cell just before the exit, so a visit cannot be sealed shut.
+          </p>
+          <p>
+            Hiding spots are dead ends that are not the start and not the exit. Press E
+            there and the camera crouches. Press E again to stand up. The prompt at the
+            bottom of the screen is the only hint: try the door, hide, step out, or use the exit.
+          </p>
+        </div>
       </section>
 
       <section id="controls">
