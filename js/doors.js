@@ -17,8 +17,17 @@ export class Doors {
 
   build() {
     const { level } = this.world;
-    const material = new THREE.MeshLambertMaterial({ color: 0x6b5130 });
-    const lockedMat = new THREE.MeshLambertMaterial({ color: 0x3a3330 });
+    const material = new THREE.MeshStandardMaterial({
+      map: woodTexture(),
+      color: 0xffffff,
+      roughness: 0.68,
+      metalness: 0.04,
+    });
+    const lockedMat = new THREE.MeshStandardMaterial({
+      color: 0x3a3330,
+      roughness: 0.55,
+      metalness: 0.12,
+    });
     let made = 0;
 
     for (let r = 1; r < level.rows - 1 && made < 10; r++) {
@@ -105,4 +114,26 @@ export class Doors {
       }
     }
   }
+}
+
+function woodTexture() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 64;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#6a4e2e";
+  ctx.fillRect(0, 0, 64, 256);
+  for (let y = 0; y < 256; y++) {
+    const wobble = Math.sin(y * 0.22) * 3;
+    ctx.strokeStyle = y % 9 === 0 ? "rgba(36, 20, 8, 0.35)" : "rgba(255, 214, 150, 0.06)";
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(64, y + wobble);
+    ctx.stroke();
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  return texture;
 }

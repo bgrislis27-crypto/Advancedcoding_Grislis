@@ -22,8 +22,11 @@ export class Lighting {
 
   setLamp(lamp, brightness) {
     const dim = 1 - this.fear * 0.5;
-    lamp.light.intensity = lamp.base * brightness * dim;
-    lamp.material.emissiveIntensity = 1.4 * brightness * dim;
+    const amount = brightness * dim;
+    lamp.light.intensity = lamp.base * amount;
+    lamp.material.emissiveIntensity = 0.35 + 2.3 * amount;
+    if (!lamp.glows) return;
+    for (const glow of lamp.glows) glow.material.opacity = 0.26 * amount;
   }
 
   update(dt) {

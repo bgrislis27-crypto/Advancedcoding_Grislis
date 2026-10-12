@@ -84,41 +84,60 @@ export class World {
 
     const wallMap = wallpaperTexture();
     const floorMap = carpetTexture();
-    const wallpaper = new THREE.MeshLambertMaterial({ map: wallMap, color: 0xffffff });
-    const darkWall = new THREE.MeshLambertMaterial({ map: wallMap, color: 0x8a7a48 });
-    const carpet = new THREE.MeshLambertMaterial({ map: floorMap, color: 0xffffff });
-    const darkCarpet = new THREE.MeshLambertMaterial({ map: floorMap, color: 0x6a5a38 });
-    const ceiling = new THREE.MeshLambertMaterial({ map: ceilingTexture(), color: 0xffffff });
+    // Standard materials pick up the ceiling lights, so a wall is brighter under a panel than in a corner.
+    const wallpaper = surface(wallMap, 0xffffff, 0.78, 0.02);
+    const darkWall = surface(wallMap, 0x8a7a48, 0.86, 0.02);
+    const carpet = surface(floorMap, 0xffffff, 0.94, 0);
+    const darkCarpet = surface(floorMap, 0x6a5a38, 0.96, 0);
+    const ceiling = surface(ceilingTexture(), 0xffffff, 0.9, 0.02);
+    this.trim = surface(null, 0xcbb98a, 0.62, 0.05);
     const walls = {
       yellow: wallpaper,
-      office: new THREE.MeshLambertMaterial({ map: wallMap, color: 0xe4dcb8 }),
-      flood: new THREE.MeshLambertMaterial({ map: wallMap, color: 0x9aa898 }),
-      maintenance: new THREE.MeshLambertMaterial({ map: wallMap, color: 0xa8aea4 }),
-      stairs: new THREE.MeshLambertMaterial({ map: wallMap, color: 0xb2aa98 }),
-      abandoned: new THREE.MeshLambertMaterial({ map: wallMap, color: 0x9a907c }),
-      strange: new THREE.MeshLambertMaterial({ map: wallMap, color: 0xc2a86a }),
+      office: surface(wallMap, 0xe4dcb8, 0.8, 0.02),
+      flood: surface(wallMap, 0x9aa898, 0.84, 0.02),
+      maintenance: surface(wallMap, 0xa8aea4, 0.84, 0.04),
+      stairs: surface(wallMap, 0xb2aa98, 0.82, 0.02),
+      abandoned: surface(wallMap, 0x9a907c, 0.88, 0.02),
+      strange: surface(wallMap, 0xc2a86a, 0.8, 0.02),
     };
     const floors = {
       yellow: carpet,
-      office: new THREE.MeshLambertMaterial({ map: floorMap, color: 0xc8c0aa }),
-      flood: new THREE.MeshLambertMaterial({ map: floorMap, color: 0x7a8e86 }),
-      maintenance: new THREE.MeshLambertMaterial({ map: floorMap, color: 0x8a8e86 }),
-      stairs: new THREE.MeshLambertMaterial({ map: floorMap, color: 0xb0a898 }),
-      abandoned: new THREE.MeshLambertMaterial({ map: floorMap, color: 0x8a8070 }),
-      strange: new THREE.MeshLambertMaterial({ map: floorMap, color: 0xc2a868 }),
+      office: surface(floorMap, 0xc8c0aa, 0.92, 0),
+      flood: surface(floorMap, 0x7a8e86, 0.55, 0.02),
+      maintenance: surface(floorMap, 0x8a8e86, 0.9, 0.02),
+      stairs: surface(floorMap, 0xb0a898, 0.88, 0.02),
+      abandoned: surface(floorMap, 0x8a8070, 0.94, 0),
+      strange: surface(floorMap, 0xc2a868, 0.9, 0),
     };
-    const lampMaterial = new THREE.MeshLambertMaterial({
+    const lampMaterial = new THREE.MeshStandardMaterial({
       color: 0xfffbea,
-      emissive: 0xfff4c8,
-      emissiveIntensity: 2.2,
+      emissive: 0xfff6d2,
+      emissiveIntensity: 2.6,
+      roughness: 0.16,
+      metalness: 0.02,
     });
-    const panelMaterial = lampMaterial.clone();
+    const panelMaterial = new THREE.MeshStandardMaterial({
+      color: 0xe4dcc4,
+      emissive: 0xfff1c4,
+      emissiveIntensity: 0.28,
+      roughness: 0.24,
+      metalness: 0.02,
+    });
+    const housingMaterial = new THREE.MeshStandardMaterial({
+      color: 0xb7b09a,
+      roughness: 0.42,
+      metalness: 0.38,
+    });
 
     const floorBox = new THREE.BoxGeometry(S, 0.2, S);
     const ceilingBox = new THREE.BoxGeometry(S, 0.12, S);
     const wallX = new THREE.BoxGeometry(0.28, height, S);
     const wallZ = new THREE.BoxGeometry(S, height, 0.28);
-    const lampBox = new THREE.BoxGeometry(1.15, 0.04, 0.48);
+    this.trimZ = new THREE.BoxGeometry(0.08, 0.16, S * 0.94);
+    this.trimX = new THREE.BoxGeometry(S * 0.94, 0.16, 0.08);
+    const lampBox = new THREE.BoxGeometry(1.15, 0.035, 0.48);
+    const housingBox = new THREE.BoxGeometry(1.32, 0.05, 0.66);
+    const glowPlane = new THREE.PlaneGeometry(1.7, 0.9);
 
     let lightCount = 0;
 
@@ -146,20 +165,37 @@ export class World {
         // Fluorescent panels on the ceiling. A point light sits under some of them.
         const lit = !hide && (c + r) % 2 === 0 && lightCount < 36;
         const shade = lit ? lampMaterial.clone() : panelMaterial;
-        this.addPanel(lampBox, shade, x - 0.72, height - 0.07, z - 0.72);
-        this.addPanel(lampBox, shade, x + 0.72, height - 0.07, z - 0.72);
-        this.addPanel(lampBox, shade, x - 0.72, height - 0.07, z + 0.72);
-        this.addPanel(lampBox, shade, x + 0.72, height - 0.07, z + 0.72);
+        const glowMaterial = lit
+          ? new THREE.MeshBasicMaterial({
+              color: 0xfff4c2,
+              transparent: true,
+              opacity: 0.22,
+              blending: THREE.AdditiveBlending,
+              depthWrite: false,
+            })
+          : null;
+        const spots = [
+          [x - 0.72, z - 0.72],
+          [x + 0.72, z - 0.72],
+          [x - 0.72, z + 0.72],
+          [x + 0.72, z + 0.72],
+        ];
+        const glows = [];
+        for (const [px, pz] of spots) {
+          const glow = this.addFixture(lampBox, housingBox, glowPlane, shade, housingMaterial, glowMaterial, px, height - 0.08, pz);
+          if (glow) glows.push(glow);
+        }
         if (!lit) continue;
 
-        const light = new THREE.PointLight(0xfff6d2, 1.7, 18, 1.35);
-        light.position.set(x, height - 0.4, z);
+        const light = new THREE.PointLight(0xfff7e4, 2.5, 16, 1.7);
+        light.position.set(x, height - 0.42, z);
         this.scene.add(light);
         lightCount += 1;
         this.lamps.push({
           light,
           material: shade,
-          base: 1.7,
+          glows,
+          base: 2.5,
           x,
           z,
           blackout: 0,
@@ -171,32 +207,46 @@ export class World {
     const exit = this.centerOf(level.exit.c, level.exit.r);
     const door = new THREE.Mesh(
       new THREE.BoxGeometry(2.2, 2.6, 0.18),
-      new THREE.MeshLambertMaterial({
+      new THREE.MeshStandardMaterial({
         map: exitSign(),
         emissive: 0x12331c,
-        emissiveIntensity: 0.35,
+        emissiveIntensity: 0.45,
+        roughness: 0.4,
+        metalness: 0.02,
       })
     );
     door.position.set(exit.x, 1.3, exit.z);
     this.scene.add(door);
 
     // A warm fill, so the rooms stay bright the way fluorescent halls do.
-    this.baseAmbient = 0.72;
+    // Fill light stays low so the ceiling panels, not a flat wash, do most of the work.
+    this.baseAmbient = 0.42;
     this.ambient = new THREE.AmbientLight(0xfff3c8, this.baseAmbient);
     this.scene.add(this.ambient);
     this.scene.add(new THREE.HemisphereLight(0xfff6d8, 0xc2b48a, 0.38));
     this.placeLandmarks();
   }
 
-  addPanel(geometry, material, x, y, z) {
-    const lamp = new THREE.Mesh(geometry, material);
+  addFixture(panelBox, housingBox, glowPlane, panelMaterial, housingMaterial, glowMaterial, x, y, z) {
+    const housing = new THREE.Mesh(housingBox, housingMaterial);
+    housing.position.set(x, y + 0.03, z);
+    this.scene.add(housing);
+
+    const lamp = new THREE.Mesh(panelBox, panelMaterial);
     lamp.position.set(x, y, z);
     this.scene.add(lamp);
+
+    if (!glowMaterial) return null;
+    const glow = new THREE.Mesh(glowPlane, glowMaterial);
+    glow.position.set(x, y - 0.06, z);
+    glow.rotation.x = Math.PI / 2;
+    this.scene.add(glow);
+    return glow;
   }
 
   addSteps(x, z) {
     const step = new THREE.BoxGeometry(1.2, 0.18, 0.4);
-    const material = new THREE.MeshLambertMaterial({ color: 0x74685a });
+    const material = new THREE.MeshStandardMaterial({ color: 0x74685a, roughness: 0.9, metalness: 0.02 });
     for (let i = 0; i < 4; i++) {
       const mesh = new THREE.Mesh(step, material);
       mesh.position.set(x - 0.6 + i * 0.35, 0.12 + i * 0.16, z);
@@ -223,10 +273,21 @@ export class World {
         labeled.add(zone);
         const spot = this.centerOf(c, r);
         const board = new THREE.Mesh(
-          new THREE.BoxGeometry(1.1, 0.4, 0.08),
-          new THREE.MeshBasicMaterial({ map: signTexture(words[zone] || zone) })
+          new THREE.BoxGeometry(1.1, 0.4, 0.06),
+          new THREE.MeshStandardMaterial({
+            map: signTexture(words[zone] || zone),
+            roughness: 0.6,
+            metalness: 0.05,
+          })
         );
-        board.position.set(spot.x, 1.7, spot.z - 1.2);
+        // Hang the sign on a wall instead of leaving it in the middle of the hall.
+        const northClosed = !(this.level.floor[r - 1] && this.level.floor[r - 1][c]);
+        if (northClosed) {
+          board.position.set(spot.x, 1.55, spot.z - this.cell / 2 + 0.2);
+        } else {
+          board.position.set(spot.x - this.cell / 2 + 0.2, 1.55, spot.z);
+          board.rotation.y = Math.PI / 2;
+        }
         this.scene.add(board);
       }
     }
@@ -250,6 +311,16 @@ export class World {
       const wall = new THREE.Mesh(geometry, material);
       wall.position.set(x + ox, height / 2, z + oz);
       this.scene.add(wall);
+
+      // A baseboard sticks out where the wall meets the carpet.
+      const trim = new THREE.Mesh(ox !== 0 ? this.trimZ : this.trimX, this.trim);
+      const nudge = 0.18;
+      trim.position.set(
+        x + ox + (ox === 0 ? 0 : -Math.sign(ox) * nudge),
+        0.09,
+        z + oz + (oz === 0 ? 0 : -Math.sign(oz) * nudge)
+      );
+      this.scene.add(trim);
     }
   }
 
@@ -271,30 +342,43 @@ function signTexture(word) {
   return texture;
 }
 
+function surface(map, color, roughness, metalness) {
+  return new THREE.MeshStandardMaterial({ map, color, roughness, metalness });
+}
+
 function wallpaperTexture() {
-  const size = 256;
+  const size = 512;
   const canvas = document.createElement("canvas");
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#d4be68";
+  ctx.fillStyle = "#c9b15a";
   ctx.fillRect(0, 0, size, size);
-  for (let i = 0; i < 2200; i++) {
-    ctx.fillStyle = Math.random() > 0.5 ? "rgba(110, 100, 40, 0.06)" : "rgba(255, 236, 170, 0.07)";
+  // Paper grain, so the wall is not one flat color between the motifs.
+  for (let i = 0; i < 7000; i++) {
+    ctx.fillStyle = Math.random() > 0.5 ? "rgba(90, 78, 28, 0.07)" : "rgba(255, 236, 180, 0.08)";
     ctx.fillRect(Math.random() * size, Math.random() * size, 2, 2);
   }
-  const step = 32;
+  const step = 64;
   for (let y = 0; y < size; y += step) {
     for (let x = 0; x < size; x += step) {
       const flip = (x / step + y / step) % 2 === 0 ? 1 : -1;
-      drawDamask(ctx, x + 16, y + 16, flip);
+      drawDamask(ctx, x + 32, y + 32, flip);
     }
   }
+  // A faint seam, like two sheets of wallpaper meeting.
+  ctx.strokeStyle = "rgba(70, 58, 20, 0.18)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(size / 2, 0);
+  ctx.lineTo(size / 2, size);
+  ctx.stroke();
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(3, 2.4);
+  texture.anisotropy = 8;
+  texture.repeat.set(1.6, 1.35);
   return texture;
 }
 
@@ -302,26 +386,26 @@ function drawDamask(ctx, cx, cy, flip) {
   ctx.save();
   ctx.translate(cx, cy);
   ctx.scale(flip, 1);
-  ctx.fillStyle = "#6f7638";
-  ctx.strokeStyle = "#5f662e";
-  ctx.lineWidth = 1.1;
+  ctx.fillStyle = "#5f6830";
+  ctx.strokeStyle = "#4e5828";
+  ctx.lineWidth = 1.6;
   ctx.beginPath();
-  ctx.moveTo(0, -13);
-  ctx.bezierCurveTo(8, -8, 6, 0, 0, 1);
-  ctx.bezierCurveTo(-6, 0, -8, -8, 0, -13);
+  ctx.moveTo(0, -22);
+  ctx.bezierCurveTo(14, -14, 11, 0, 0, 2);
+  ctx.bezierCurveTo(-11, 0, -14, -14, 0, -22);
   ctx.fill();
   ctx.beginPath();
-  ctx.moveTo(0, 2);
-  ctx.bezierCurveTo(7, 4, 5, 11, 0, 13);
-  ctx.bezierCurveTo(-5, 11, -7, 4, 0, 2);
+  ctx.moveTo(0, 4);
+  ctx.bezierCurveTo(12, 8, 9, 20, 0, 24);
+  ctx.bezierCurveTo(-9, 20, -12, 8, 0, 4);
   ctx.stroke();
   ctx.beginPath();
-  ctx.moveTo(-3, 0);
-  ctx.quadraticCurveTo(-12, -2, -11, 6);
-  ctx.quadraticCurveTo(-8, 2, -3, 3);
-  ctx.moveTo(3, 0);
-  ctx.quadraticCurveTo(12, -2, 11, 6);
-  ctx.quadraticCurveTo(8, 2, 3, 3);
+  ctx.moveTo(-5, 0);
+  ctx.quadraticCurveTo(-22, -3, -20, 11);
+  ctx.quadraticCurveTo(-14, 4, -5, 5);
+  ctx.moveTo(5, 0);
+  ctx.quadraticCurveTo(22, -3, 20, 11);
+  ctx.quadraticCurveTo(14, 4, 5, 5);
   ctx.stroke();
   ctx.restore();
 }
@@ -334,56 +418,93 @@ function carpetTexture() {
   const ctx = canvas.getContext("2d");
   const image = ctx.createImageData(size, size);
   const data = image.data;
-  for (let i = 0; i < data.length; i += 4) {
-    const speck = Math.random();
-    let red = 198;
-    let green = 168;
-    let blue = 86;
-    if (speck > 0.82) {
-      red = 236;
-      green = 214;
-      blue = 140;
-    } else if (speck < 0.16) {
-      red = 132;
-      green = 104;
-      blue = 42;
+  const stains = [];
+  for (let s = 0; s < 7; s++) {
+    stains.push({
+      x: Math.random() * size,
+      y: Math.random() * size,
+      radius: 22 + Math.random() * 46,
+      dark: Math.random() > 0.45,
+    });
+  }
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const speck = Math.random();
+      let red = 176;
+      let green = 146;
+      let blue = 72;
+      if (speck > 0.78) {
+        red = 214;
+        green = 186;
+        blue = 108;
+      } else if (speck < 0.2) {
+        red = 128;
+        green = 98;
+        blue = 40;
+      }
+      const fiber = Math.sin(x * 0.37 + y * 0.11) * Math.cos(y * 0.29);
+      red += fiber * 8;
+      green += fiber * 6;
+      for (const stain of stains) {
+        const distance = Math.hypot(x - stain.x, y - stain.y);
+        if (distance >= stain.radius) continue;
+        const amount = (1 - distance / stain.radius) * 0.4;
+        if (stain.dark) {
+          red -= 48 * amount;
+          green -= 34 * amount;
+          blue -= 16 * amount;
+        } else {
+          red += 28 * amount;
+          green += 20 * amount;
+          blue += 8 * amount;
+        }
+      }
+      const index = (y * size + x) * 4;
+      data[index] = Math.max(0, Math.min(255, red));
+      data[index + 1] = Math.max(0, Math.min(255, green));
+      data[index + 2] = Math.max(0, Math.min(255, blue));
+      data[index + 3] = 255;
     }
-    data[i] = red;
-    data[i + 1] = green;
-    data[i + 2] = blue;
-    data[i + 3] = 255;
   }
   ctx.putImageData(image, 0, 0);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(10, 10);
+  texture.anisotropy = 8;
+  texture.repeat.set(4, 4);
   return texture;
 }
 
 function ceilingTexture() {
+  const size = 256;
   const canvas = document.createElement("canvas");
-  canvas.width = 128;
-  canvas.height = 128;
+  canvas.width = size;
+  canvas.height = size;
   const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#efe3b4";
-  ctx.fillRect(0, 0, 128, 128);
-  ctx.strokeStyle = "rgba(120, 100, 50, 0.35)";
-  ctx.lineWidth = 2;
-  for (let n = 0; n <= 128; n += 32) {
-    ctx.beginPath();
-    ctx.moveTo(n, 0);
-    ctx.lineTo(n, 128);
-    ctx.moveTo(0, n);
-    ctx.lineTo(128, n);
-    ctx.stroke();
+  ctx.fillStyle = "#cfc6aa";
+  ctx.fillRect(0, 0, size, size);
+  const tile = 64;
+  for (let y = 0; y < size; y += tile) {
+    for (let x = 0; x < size; x += tile) {
+      const shade = 214 + Math.floor(Math.random() * 22);
+      ctx.fillStyle = `rgb(${shade}, ${shade - 10}, ${shade - 32})`;
+      ctx.fillRect(x + 4, y + 4, tile - 8, tile - 8);
+      ctx.fillStyle = "rgba(80, 62, 28, 0.22)";
+      ctx.fillRect(x + 4, y + 4, tile - 8, 3);
+      ctx.fillRect(x + 4, y + 4, 3, tile - 8);
+      for (let i = 0; i < 18; i++) {
+        ctx.fillStyle = Math.random() > 0.55 ? "rgba(255, 250, 230, 0.28)" : "rgba(70, 52, 18, 0.14)";
+        ctx.fillRect(x + 8 + Math.random() * (tile - 16), y + 8 + Math.random() * (tile - 16), 2, 2);
+      }
+    }
   }
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(4, 4);
+  texture.anisotropy = 8;
+  texture.repeat.set(2, 2);
   return texture;
 }
 
