@@ -1,63 +1,76 @@
-# Survive
+# Backrooms
 
-A first-person wilderness survival game for an advanced coding class.
+A first-person 3D maze. The hallways are yellow, the lights flicker, and the picture can go black for a moment. Find the green **EXIT** before the three minutes run out.
 
-You start in a forest meadow, look around with the mouse, and walk toward snowy mountains. Your hands hold a bow, and the screen shows health, hunger, thirst, and stamina.
+This is a browser game made with **Three.js**. No extra install is needed.
 
-The game runs in the browser with **Three.js**. There is no game engine to install.
+## Link for class
+
+One scrolling page about the game:
+
+https://htmlpreview.github.io/?https://raw.githubusercontent.com/bgrislis27-crypto/Advancedcoding_Grislis/main/about.html
+
+Play the game from that page, or open it directly:
+
+https://htmlpreview.github.io/?https://raw.githubusercontent.com/bgrislis27-crypto/Advancedcoding_Grislis/main/play.html
+
+`play.html` is the same game packed into one file so that link can run it. The class code you read and edit is still the separate files below.
 
 ## How to run
 
-Open a terminal in this folder and start a small local server. A server is required because the game loads JavaScript as modules.
+From this folder:
 
 ```bash
 python3 -m http.server 8000
 ```
 
-Then open [http://localhost:8000](http://localhost:8000) and click **Enter the forest**.
+Open [http://localhost:8000](http://localhost:8000) and click **Wake Up**. **More Options** lets you pick a mode and a difficulty first.
+
+- **Classic** — the lights cut out at random. You have three minutes.
+- **Deaf** — no sound. The lights still cut out.
+- **Free** — fewer flashes. The clock still runs.
+- **Easy** — the darkness comes less often. Sprint and the flashlight last longer.
+- **Normal** — a fair three minutes.
+- **Hard** — the darkness comes more often, and the battery fades sooner.
 
 ## Controls
 
-- **Mouse** — look around. Click the game if the cursor is still showing.
-- **W A S D** or the **arrow keys** — walk
-- **Shift** — sprint. This uses stamina.
-- **Q / E** — turn left or right if the mouse is not locked
-- **Hold the left mouse button** — draw the bow
-- **Esc** — show the mouse again
+- **Mouse** — look around
+- **W A S D** — move
+- **Shift** — run (uses stamina, and the steps get louder)
+- **F** — flashlight. The gold bar is the battery. It flickers when the battery is low.
+- **E** — try a door, hide in a dark corner, step back out, or use the exit
+- **Arrow left / right** — turn if the mouse is not locked
 
-## What is on the screen
+There is no map. A few signs name the kind of place you are in. The halls connect: yellow halls, offices, wet floors, maintenance, stairs, empty rooms, and stranger rooms.
 
-The circles on the left are survival meters:
-
-- lightning bolt — stamina
-- fork and knife — hunger
-- water drop — thirst
-- heart — health
-
-The thin bar at the bottom shows how far the bow is drawn. The numbers on the right are the arrow count.
-
-## How the code is organized
-
-Start with `index.html`, then `js/main.js`. Comments in each file explain what that file does.
+## Where the code goes
 
 | File | What it does |
 | --- | --- |
-| `index.html` | Page, start screen, and survival HUD |
-| `css/style.css` | Look of the start screen and HUD |
+| `index.html` | Page, start screen, timer, stamina bar, win and lose screens |
+| `css/style.css` | Yellow-and-black look of those screens |
 | `js/main.js` | Starts the game |
-| `js/game.js` | 3D scene, sky, lights, fog, and the game loop |
-| `js/world.js` | Ground, trees, rocks, flowers, mountains, and snow |
-| `js/player.js` | Walking, looking around, and survival stats |
-| `js/viewmodel.js` | Hands, bow, and arrow |
+| `js/game.js` | 3D scene, game loop, timer, win and lose checks |
+| `js/maze.js` | Builds a new random hallway layout each visit |
+| `js/world.js` | Yellow walls, carpet, ceiling lights, exit door |
+| `js/lighting.js` | Flicker and blackouts for each ceiling light |
+| `js/player.js` | Walking, running, stamina, hiding, doors, and the exit |
+| `js/camera.js` | Head bob, sway, and a small shake after a scare |
+| `js/creature.js` | Old entity code. The game no longer shows it |
+| `js/darkness.js` | Random flashes that black out the picture |
+| `js/watcher.js` | A rare shadow at the end of a hallway |
+| `js/doors.js` | Doors that open, stay locked, lead somewhere else, or vanish |
+| `js/flashlight.js` | Flashlight battery, flicker, and short malfunctions |
+| `js/fear.js` | Hidden fear. Dark, sounds, and the entity raise it. A still room lowers it. |
+| `js/hallucination.js` | A very short false figure |
+| `js/timewarp.js` | Quiet changes after a long walk |
+| `js/scare.js` | A rare close scare after fear is already high |
+| `js/changes.js` | Boxes and lights that change behind you |
+| `js/events.js` | Picks one quiet scare every 20–60 seconds |
+| `js/look.js` | Checks whether you are looking at a spot |
 | `js/input.js` | Keyboard and mouse |
-| `js/hud.js` | Updates the on-screen meters |
-| `js/noise.js` | Random-looking hills so the ground is not flat |
-| `js/textures.js` | Painted grass, bark, rock, wood, and skin pictures |
+| `js/audio.js` | Buzz, footsteps, directional noises, and stretches of silence |
+| `js/hud.js` | Timer, stamina bar, battery bar, and end screens |
 
-## Extra images
-
-`assets/` has pixel-art pictures of a player, a monster, and food. Those images are concept art. The 3D scene does not draw them yet.
-
-## What is not in the game yet
-
-Enemies, shooting arrows, collecting food, and a real win or lose condition are not built yet. Hunger and thirst go down over time, but they do not end the game.
+Old pixel-art pictures in `assets/` are not used by this maze.

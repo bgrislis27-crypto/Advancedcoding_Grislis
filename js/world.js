@@ -1,421 +1,525 @@
 import * as THREE from "three";
-import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
-import { createNoise, smoothstep } from "./noise.js";
-import { createBarkTexture, createGroundDetail, createNeedleDetail, createRockDetail } from "./textures.js";
+import { zoneName } from "./maze.js";
 
-// This file builds the outdoor world: ground, trees, rocks, flowers, mountains, and snow.
+// Turns the maze numbers into yellow hallways, carpet, ceiling lights, and a green exit door.
 
 export class World {
-  constructor(scene) {
+  constructor(scene, level) {
     this.scene = scene;
-    this.noise = createNoise(904); // same seed every time, so the map stays the same
-    this.treeSpots = []; // saved so the player can bump into trunks
-    this.snow = null;
-    this.snowPositions = null;
-
-    // Build the world in layers, from the ground up.
-    this.addTerrain();
-    this.addMountains();
-    this.addClouds();
-    this.addForest();
-    this.addRocks();
-    this.addMeadow();
-    this.addSnow();
+    this.level = level;
+    this.cell = level.cell;
+    this.lamps = [];
+    this.blocks = [];
+    this.doors = [];
+    this.ambient = null;
+    this.build();
   }
 
-  // How high the ground is at a point. Center is a meadow, edges rise into mountains.
-  heightAt(x, z) {
-    const d = Math.hypot(x, z); // distance from the middle of the map
-    const n1 = this.noise.fbm(x * 0.007, z * 0.007, 5); // big rolling hills
-    const n2 = this.noise.fbm(x * 0.028 + 40, z * 0.028, 3); // smaller bumps
-    const meadow = 1 - smoothstep(18, 62, d); // 1 in the center, 0 farther out
-    const mountain = Math.pow(smoothstep(68, 175, d), 1.28) * (48 + n1 * 34);
-    const hills = n1 * 6.5 + n2 * 2.2;
-    return meadow * (0.6 + hills * 0.2) + (1 - meadow) * (hills + 1.5) + mountain;
+  centerOf(c, r) {
+    return {
+      x: (c + 0.5) * this.cell,
+      z: (r + 0.5) * this.cell,
+    };
   }
 
-  // Stay inside a circle so you don't walk off the edge of the terrain.
-  inBounds(x, z) {
-    return Math.hypot(x, z) < 132;
+  cellAt(x, z) {
+    return {
+      c: Math.floor(x / this.cell),
+      r: Math.floor(z / this.cell),
+    };
   }
 
-  // True if this spot is too close to a tree trunk.
+  isOpen(x, z) {
+    const { c, r } = this.cellAt(x, z);
+    if (c < 0 || r < 0 || c >= this.level.cols || r >= this.level.rows) return false;
+    return this.level.floor[r][c];
+  }
+
+  isHide(x, z) {
+    const { c, r } = this.cellAt(x, z);
+    return this.level.hides.has(`${c},${r}`);
+  }
+
+  isExit(x, z) {
+    const { c, r } = this.cellAt(x, z);
+    return c === this.level.exit.c && r === this.level.exit.r;
+  }
+
+  zoneAt(x, z) {
+    const { c, r } = this.cellAt(x, z);
+    return zoneName(this.level, c, r);
+  }
+
+  isSafe(x, z) {
+    const { c, r } = this.cellAt(x, z);
+    return this.level.safe.has(`${c},${r}`);
+  }
+
   blocked(x, z) {
-    for (const tree of this.treeSpots) {
-      if (Math.hypot(x - tree.x, z - tree.z) < tree.radius) return true;
+    for (const block of this.blocks) {
+      if (!block.active) continue;
+      if (Math.abs(x - block.x) < 0.55 && Math.abs(z - block.z) < 1.85) return true;
     }
     return false;
   }
 
-  addTerrain() {
-    const size = 420; // how wide the ground is
-    const segs = 175; // more segments = smoother hills
-    const geometry = new THREE.PlaneGeometry(size, size, segs, segs);
-    geometry.rotateX(-Math.PI / 2); // lay the flat plane down like a floor
-
-    const pos = geometry.attributes.position;
-    const colors = new Float32Array(pos.count * 3);
-    const grass = new THREE.Color(0x4d7a32);
-    const bright = new THREE.Color(0x6e9a3d);
-    const dry = new THREE.Color(0x7d8a45);
-    const rock = new THREE.Color(0x8a8c86);
-    const snow = new THREE.Color(0xf2f6fa);
-
-    // Push each vertex up to make hills, then color it grass, rock, or snow.
-    for (let i = 0; i < pos.count; i++) {
-      const x = pos.getX(i);
-      const z = pos.getZ(i);
-      const y = this.heightAt(x, z);
-      pos.setY(i, y);
-
-      const d = Math.hypot(x, z);
-      const flower = this.noise.noise2(x * 0.12, z * 0.12);
-      const color = new THREE.Color();
-      if (y > 38) color.copy(snow); // high ground is white
-      else if (y > 26) color.lerpColors(rock, snow, smoothstep(26, 40, y)); // mix rock into snow
-      else if (d < 55) {
-        color.lerpColors(grass, bright, flower); // meadow
-        if (flower > 0.62) color.lerp(new THREE.Color(0xd7c34a), 0.35); // extra yellow patches
-      } else color.lerpColors(dry, rock, smoothstep(18, 34, y)); // slopes farther out
-
-      colors[i * 3] = color.r;
-      colors[i * 3 + 1] = color.g;
-      colors[i * 3 + 2] = color.b;
+  nearestDoor(x, z) {
+    let best = null;
+    let bestDistance = 1.35;
+    for (const door of this.doors) {
+      if (door.gone) continue;
+      const distance = Math.hypot(x - door.x, z - door.z);
+      if (distance < bestDistance) {
+        best = door;
+        bestDistance = distance;
+      }
     }
-
-    geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-    geometry.computeVertexNormals(); // needed so lighting looks right on hills
-
-    const mesh = new THREE.Mesh(
-      geometry,
-      new THREE.MeshStandardMaterial({
-        map: createGroundDetail(), // tiny blades and specks over the ground colors
-        vertexColors: true, // use the colors we just stored
-        roughness: 0.92,
-        metalness: 0,
-      })
-    );
-    mesh.receiveShadow = true; // trees can cast shadows onto the grass
-    this.scene.add(mesh);
+    return best;
   }
 
-  addMountains() {
-    const rock = new THREE.Color(0x8d9094);
-    const snow = new THREE.Color(0xf4f7fb);
-    for (let i = 0; i < 18; i++) {
-      // Spread peaks in a ring in front of the starting view.
-      const angle = -Math.PI * 0.72 + (i / 17) * Math.PI * 1.44;
-      const dist = 148 + (i % 4) * 10;
-      const x = Math.sin(angle) * dist;
-      const z = -Math.abs(Math.cos(angle)) * dist - 10;
-      const peak = new THREE.ConeGeometry(16 + (i % 5) * 3.5, 48 + (i % 6) * 8, 10);
-      const colors = new Float32Array(peak.attributes.position.count * 3);
-      for (let v = 0; v < peak.attributes.position.count; v++) {
-        const y = peak.attributes.position.getY(v);
-        const mix = smoothstep(4, 18, y);
-        const color = rock.clone().lerp(snow, mix); // snow on the top of the peak
-        colors[v * 3] = color.r;
-        colors[v * 3 + 1] = color.g;
-        colors[v * 3 + 2] = color.b;
+  build() {
+    const { level } = this;
+    const S = level.cell;
+    const height = 3.2;
+
+    const wallMap = wallpaperTexture();
+    const floorMap = carpetTexture();
+    // Standard materials pick up the ceiling lights, so a wall is brighter under a panel than in a corner.
+    const wallpaper = surface(wallMap, 0xffffff, 0.78, 0.02);
+    const darkWall = surface(wallMap, 0x8a7a48, 0.86, 0.02);
+    const carpet = surface(floorMap, 0xffffff, 0.94, 0);
+    const darkCarpet = surface(floorMap, 0x6a5a38, 0.96, 0);
+    const ceiling = surface(ceilingTexture(), 0xffffff, 0.9, 0.02);
+    this.trim = surface(null, 0xcbb98a, 0.62, 0.05);
+    const walls = {
+      yellow: wallpaper,
+      office: surface(wallMap, 0xe4dcb8, 0.8, 0.02),
+      flood: surface(wallMap, 0x9aa898, 0.84, 0.02),
+      maintenance: surface(wallMap, 0xa8aea4, 0.84, 0.04),
+      stairs: surface(wallMap, 0xb2aa98, 0.82, 0.02),
+      abandoned: surface(wallMap, 0x9a907c, 0.88, 0.02),
+      strange: surface(wallMap, 0xc2a86a, 0.8, 0.02),
+    };
+    const floors = {
+      yellow: carpet,
+      office: surface(floorMap, 0xc8c0aa, 0.92, 0),
+      flood: surface(floorMap, 0x7a8e86, 0.55, 0.02),
+      maintenance: surface(floorMap, 0x8a8e86, 0.9, 0.02),
+      stairs: surface(floorMap, 0xb0a898, 0.88, 0.02),
+      abandoned: surface(floorMap, 0x8a8070, 0.94, 0),
+      strange: surface(floorMap, 0xc2a868, 0.9, 0),
+    };
+    const lampMaterial = new THREE.MeshStandardMaterial({
+      color: 0xfffbea,
+      emissive: 0xfff6d2,
+      emissiveIntensity: 2.6,
+      roughness: 0.16,
+      metalness: 0.02,
+    });
+    const panelMaterial = new THREE.MeshStandardMaterial({
+      color: 0xe4dcc4,
+      emissive: 0xfff1c4,
+      emissiveIntensity: 0.28,
+      roughness: 0.24,
+      metalness: 0.02,
+    });
+    const housingMaterial = new THREE.MeshStandardMaterial({
+      color: 0xb7b09a,
+      roughness: 0.42,
+      metalness: 0.38,
+    });
+
+    const floorBox = new THREE.BoxGeometry(S, 0.2, S);
+    const ceilingBox = new THREE.BoxGeometry(S, 0.12, S);
+    const wallX = new THREE.BoxGeometry(0.28, height, S);
+    const wallZ = new THREE.BoxGeometry(S, height, 0.28);
+    this.trimZ = new THREE.BoxGeometry(0.08, 0.16, S * 0.94);
+    this.trimX = new THREE.BoxGeometry(S * 0.94, 0.16, 0.08);
+    const lampBox = new THREE.BoxGeometry(1.15, 0.035, 0.48);
+    const housingBox = new THREE.BoxGeometry(1.32, 0.05, 0.66);
+    const glowPlane = new THREE.PlaneGeometry(1.7, 0.9);
+
+    let lightCount = 0;
+
+    for (let r = 0; r < level.rows; r++) {
+      for (let c = 0; c < level.cols; c++) {
+        if (!level.floor[r][c]) continue;
+
+        const x = (c + 0.5) * S;
+        const z = (r + 0.5) * S;
+        const hide = level.hides.has(`${c},${r}`);
+        const zone = zoneName(level, c, r);
+        const lift = zone === "strange" ? ((c * 3 + r) % 3) * 0.4 : 0;
+
+        const floorMesh = new THREE.Mesh(floorBox, hide ? darkCarpet : floors[zone] || carpet);
+        floorMesh.position.set(x, -0.1, z);
+        this.scene.add(floorMesh);
+
+        const ceilingMesh = new THREE.Mesh(ceilingBox, hide ? darkWall : ceiling);
+        ceilingMesh.position.set(x, height + lift, z);
+        this.scene.add(ceilingMesh);
+
+        this.addWalls(c, r, x, z, height + lift, hide ? darkWall : walls[zone] || wallpaper, wallX, wallZ);
+        if (zone === "stairs") this.addSteps(x, z);
+
+        // Fluorescent panels on the ceiling. A point light sits under some of them.
+        const lit = !hide && (c + r) % 2 === 0 && lightCount < 36;
+        const shade = lit ? lampMaterial.clone() : panelMaterial;
+        const glowMaterial = lit
+          ? new THREE.MeshBasicMaterial({
+              color: 0xfff4c2,
+              transparent: true,
+              opacity: 0.22,
+              blending: THREE.AdditiveBlending,
+              depthWrite: false,
+            })
+          : null;
+        const spots = [
+          [x - 0.72, z - 0.72],
+          [x + 0.72, z - 0.72],
+          [x - 0.72, z + 0.72],
+          [x + 0.72, z + 0.72],
+        ];
+        const glows = [];
+        for (const [px, pz] of spots) {
+          const glow = this.addFixture(lampBox, housingBox, glowPlane, shade, housingMaterial, glowMaterial, px, height - 0.08, pz);
+          if (glow) glows.push(glow);
+        }
+        if (!lit) continue;
+
+        const light = new THREE.PointLight(0xfff7e4, 2.5, 16, 1.7);
+        light.position.set(x, height - 0.42, z);
+        this.scene.add(light);
+        lightCount += 1;
+        this.lamps.push({
+          light,
+          material: shade,
+          glows,
+          base: 2.5,
+          x,
+          z,
+          blackout: 0,
+          flicker: 0,
+        });
       }
-      peak.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-      const mesh = new THREE.Mesh(
-        peak,
-        new THREE.MeshStandardMaterial({
-          map: createRockDetail(),
-          vertexColors: true,
-          roughness: 0.94,
-        })
-      );
-      mesh.position.set(x, this.heightAt(x, z) + 10, z);
-      mesh.rotation.y = Math.random() * Math.PI;
+    }
+
+    const exit = this.centerOf(level.exit.c, level.exit.r);
+    const door = new THREE.Mesh(
+      new THREE.BoxGeometry(2.2, 2.6, 0.18),
+      new THREE.MeshStandardMaterial({
+        map: exitSign(),
+        emissive: 0x12331c,
+        emissiveIntensity: 0.45,
+        roughness: 0.4,
+        metalness: 0.02,
+      })
+    );
+    door.position.set(exit.x, 1.3, exit.z);
+    this.scene.add(door);
+
+    // A warm fill, so the rooms stay bright the way fluorescent halls do.
+    // Fill light stays low so the ceiling panels, not a flat wash, do most of the work.
+    this.baseAmbient = 0.42;
+    this.ambient = new THREE.AmbientLight(0xfff3c8, this.baseAmbient);
+    this.scene.add(this.ambient);
+    this.scene.add(new THREE.HemisphereLight(0xfff6d8, 0xc2b48a, 0.38));
+    this.placeLandmarks();
+  }
+
+  addFixture(panelBox, housingBox, glowPlane, panelMaterial, housingMaterial, glowMaterial, x, y, z) {
+    const housing = new THREE.Mesh(housingBox, housingMaterial);
+    housing.position.set(x, y + 0.03, z);
+    this.scene.add(housing);
+
+    const lamp = new THREE.Mesh(panelBox, panelMaterial);
+    lamp.position.set(x, y, z);
+    this.scene.add(lamp);
+
+    if (!glowMaterial) return null;
+    const glow = new THREE.Mesh(glowPlane, glowMaterial);
+    glow.position.set(x, y - 0.06, z);
+    glow.rotation.x = Math.PI / 2;
+    this.scene.add(glow);
+    return glow;
+  }
+
+  addSteps(x, z) {
+    const step = new THREE.BoxGeometry(1.2, 0.18, 0.4);
+    const material = new THREE.MeshStandardMaterial({ color: 0x74685a, roughness: 0.9, metalness: 0.02 });
+    for (let i = 0; i < 4; i++) {
+      const mesh = new THREE.Mesh(step, material);
+      mesh.position.set(x - 0.6 + i * 0.35, 0.12 + i * 0.16, z);
       this.scene.add(mesh);
     }
   }
 
-  addClouds() {
-    // Paint a soft white blob, then put copies of it in the sky.
-    const canvas = document.createElement("canvas");
-    canvas.width = 256;
-    canvas.height = 256;
-    const ctx = canvas.getContext("2d");
-    const gradient = ctx.createRadialGradient(128, 128, 20, 128, 128, 120);
-    gradient.addColorStop(0, "rgba(255,255,255,0.85)");
-    gradient.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, 256, 256);
-    const texture = new THREE.CanvasTexture(canvas);
-
-    for (let i = 0; i < 10; i++) {
-      const cloud = new THREE.Mesh(
-        new THREE.PlaneGeometry(48 + Math.random() * 30, 18 + Math.random() * 10),
-        new THREE.MeshBasicMaterial({
-          map: texture,
-          transparent: true,
-          depthWrite: false,
-          opacity: 0.55,
-        })
-      );
-      cloud.position.set((Math.random() - 0.5) * 220, 48 + Math.random() * 18, -40 - Math.random() * 140);
-      cloud.lookAt(0, 40, 0);
-      this.scene.add(cloud);
-    }
-  }
-
-  addForest() {
-    const foliage = createFoliageGeometry();
-    const trunk = createTrunkGeometry();
-    // Leaves and bark are separate so each one can have its own texture.
-    const leafMaterial = new THREE.MeshStandardMaterial({
-      map: createNeedleDetail(),
-      vertexColors: true,
-      roughness: 0.88,
-      metalness: 0,
-    });
-    const barkMaterial = new THREE.MeshStandardMaterial({
-      map: createBarkTexture(),
-      roughness: 0.95,
-      metalness: 0,
-    });
-
-    // One tree model, drawn many times. That is much faster than 240 separate trees.
-    const count = 240;
-    const leaves = new THREE.InstancedMesh(foliage, leafMaterial, count);
-    const trunks = new THREE.InstancedMesh(trunk, barkMaterial, count);
-    leaves.castShadow = true;
-    leaves.receiveShadow = true;
-    trunks.castShadow = true;
-    trunks.receiveShadow = true;
-    const dummy = new THREE.Object3D();
-    let placed = 0;
-    let attempts = 0;
-
-    while (placed < count && attempts < 2000) {
-      attempts += 1;
-      const x = (Math.random() - 0.5) * 280;
-      const z = (Math.random() - 0.5) * 280;
-      const d = Math.hypot(x, z);
-      if (d < 22 || d > 138) continue; // keep the spawn meadow open
-      if (z < 8 && Math.abs(x) < 14 && d < 90) continue; // leave a path toward the mountains
-      if (this.treeSpots.some((t) => Math.hypot(t.x - x, t.z - z) < 4.2)) continue; // don't stack trees on top of each other
-
-      const scale = 1.3 + Math.random() * 1.7; // random tree height
-      dummy.position.set(x, this.heightAt(x, z), z);
-      dummy.rotation.set(0, Math.random() * Math.PI * 2, 0); // spin so they don't all face the same way
-      dummy.scale.setScalar(scale);
-      dummy.updateMatrix();
-      leaves.setMatrixAt(placed, dummy.matrix); // copy this tree's pose into the big group
-      trunks.setMatrixAt(placed, dummy.matrix);
-      this.treeSpots.push({ x, z, radius: 0.9 * scale });
-      placed += 1;
-    }
-
-    leaves.count = placed;
-    trunks.count = placed;
-    this.scene.add(leaves, trunks);
-
-    // A few extra-large trees near the starting view.
-    const heroPositions = [
-      [9.5, -4, 2.1],
-      [16, 8, 1.8],
-      [-18, 6, 1.9],
-      [22, -18, 2.2],
-    ];
-    for (const [x, z, scale] of heroPositions) {
-      const treeLeaves = new THREE.Mesh(foliage, leafMaterial);
-      const treeTrunk = new THREE.Mesh(trunk, barkMaterial);
-      treeLeaves.position.set(x, this.heightAt(x, z), z);
-      treeTrunk.position.copy(treeLeaves.position);
-      treeLeaves.scale.setScalar(scale);
-      treeTrunk.scale.setScalar(scale);
-      treeLeaves.castShadow = true;
-      treeTrunk.castShadow = true;
-      treeLeaves.receiveShadow = true;
-      treeTrunk.receiveShadow = true;
-      this.scene.add(treeLeaves, treeTrunk);
-      this.treeSpots.push({ x, z, radius: 1.1 * scale });
-    }
-  }
-
-  addRocks() {
-    const geo = new THREE.IcosahedronGeometry(1, 2); // rounder rock than a simple low-poly blob
-    const material = new THREE.MeshStandardMaterial({
-      map: createRockDetail(),
-      color: 0x9a9c96,
-      roughness: 0.94,
-    });
-    const dummy = new THREE.Object3D();
-    const mesh = new THREE.InstancedMesh(geo, material, 90);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-
-    for (let i = 0; i < 90; i++) {
-      const x = (Math.random() - 0.5) * 240;
-      const z = (Math.random() - 0.5) * 240;
-      dummy.position.set(x, this.heightAt(x, z) + 0.2, z);
-      dummy.rotation.set(Math.random(), Math.random(), Math.random());
-      dummy.scale.set(0.4 + Math.random() * 1.8, 0.3 + Math.random() * 1.1, 0.4 + Math.random() * 1.6);
-      dummy.updateMatrix();
-      mesh.setMatrixAt(i, dummy.matrix);
-    }
-    this.scene.add(mesh);
-
-    // One large rock wall off to the side, like a cliff.
-    const cliff = new THREE.Mesh(
-      new THREE.BoxGeometry(18, 14, 10),
-      new THREE.MeshStandardMaterial({ color: 0x6f736c, roughness: 1, flatShading: true })
-    );
-    cliff.position.set(42, this.heightAt(42, -8) + 5, -8);
-    cliff.rotation.y = 0.4;
-    cliff.castShadow = true;
-    cliff.receiveShadow = true;
-    this.scene.add(cliff);
-  }
-
-  addMeadow() {
-    // Yellow top + green stem, glued into one flower shape.
-    const flowerGeo = mergeGeometries([
-      colored(new THREE.SphereGeometry(0.07, 6, 6), new THREE.Color(0xe6c14a)),
-      colored(new THREE.CylinderGeometry(0.012, 0.016, 0.18, 4).translate(0, -0.12, 0), new THREE.Color(0x3f7a28)),
-    ]);
-    const flowerMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8 });
-    const flowers = new THREE.InstancedMesh(flowerGeo, flowerMat, 700);
-    const dummy = new THREE.Object3D();
-    let n = 0;
-    while (n < 700) {
-      const x = (Math.random() - 0.5) * 90;
-      const z = (Math.random() - 0.5) * 90;
-      if (Math.hypot(x, z) > 48) continue;
-      dummy.position.set(x, this.heightAt(x, z) + 0.16, z);
-      dummy.rotation.y = Math.random() * Math.PI;
-      dummy.scale.setScalar(1.1 + Math.random() * 1.1);
-      dummy.updateMatrix();
-      flowers.setMatrixAt(n, dummy.matrix);
-      n += 1;
-    }
-    this.scene.add(flowers);
-
-    // Little grass tufts scattered around the meadow.
-    const grassGeo = colored(new THREE.ConeGeometry(0.05, 0.28, 4), new THREE.Color(0x3c6b28));
-    const grass = new THREE.InstancedMesh(
-      grassGeo,
-      new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 }),
-      900
-    );
-    n = 0;
-    while (n < 900) {
-      const x = (Math.random() - 0.5) * 110;
-      const z = (Math.random() - 0.5) * 110;
-      dummy.position.set(x, this.heightAt(x, z) + 0.1, z);
-      dummy.rotation.y = Math.random() * Math.PI;
-      dummy.scale.set(0.6 + Math.random(), 0.8 + Math.random() * 1.4, 0.6 + Math.random());
-      dummy.updateMatrix();
-      grass.setMatrixAt(n, dummy.matrix);
-      n += 1;
-    }
-    this.scene.add(grass);
-  }
-
-  addSnow() {
-    const count = 1400;
-    const positions = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 40;
-      positions[i * 3 + 1] = Math.random() * 18;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 40;
-    }
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-
-    // Soft round flake instead of a hard square.
-    const canvas = document.createElement("canvas");
-    canvas.width = 32;
-    canvas.height = 32;
-    const ctx = canvas.getContext("2d");
-    const gradient = ctx.createRadialGradient(16, 16, 1, 16, 16, 14);
-    gradient.addColorStop(0, "rgba(255,255,255,1)");
-    gradient.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, 32, 32);
-
-    this.snow = new THREE.Points(
-      geometry,
-      new THREE.PointsMaterial({
-        map: new THREE.CanvasTexture(canvas),
-        color: 0xffffff,
-        size: 0.12,
-        transparent: true,
-        opacity: 0.9,
-        depthWrite: false,
-        alphaTest: 0.05,
-      })
-    );
-    this.snowPositions = positions;
-    this.scene.add(this.snow);
-  }
-
-  update(dt, player) {
-    if (!this.snow) return;
-    // Keep the snow around the player so it looks like it is falling everywhere.
-    this.snow.position.set(player.x, player.camera.position.y, player.z);
-    const pos = this.snowPositions;
-    for (let i = 0; i < pos.length; i += 3) {
-      pos[i + 1] -= dt * (1.4 + (i % 5) * 0.15); // fall down
-      pos[i] += dt * 0.35; // light wind
-      if (pos[i + 1] < -2) {
-        // Flake fell past the camera, so send it back up to fall again.
-        pos[i] = (Math.random() - 0.5) * 40;
-        pos[i + 1] = 16;
-        pos[i + 2] = (Math.random() - 0.5) * 40;
+  placeLandmarks() {
+    const labeled = new Set();
+    const words = {
+      yellow: "HALL",
+      office: "OFFICE",
+      flood: "WET",
+      maintenance: "MAINT",
+      stairs: "STAIRS",
+      abandoned: "EMPTY",
+      strange: "???",
+    };
+    for (let r = 0; r < this.level.rows; r++) {
+      for (let c = 0; c < this.level.cols; c++) {
+        if (!this.level.floor[r][c]) continue;
+        const zone = zoneName(this.level, c, r);
+        if (labeled.has(zone)) continue;
+        labeled.add(zone);
+        const spot = this.centerOf(c, r);
+        const board = new THREE.Mesh(
+          new THREE.BoxGeometry(1.1, 0.4, 0.06),
+          new THREE.MeshStandardMaterial({
+            map: signTexture(words[zone] || zone),
+            roughness: 0.6,
+            metalness: 0.05,
+          })
+        );
+        // Hang the sign on a wall instead of leaving it in the middle of the hall.
+        const northClosed = !(this.level.floor[r - 1] && this.level.floor[r - 1][c]);
+        if (northClosed) {
+          board.position.set(spot.x, 1.55, spot.z - this.cell / 2 + 0.2);
+        } else {
+          board.position.set(spot.x - this.cell / 2 + 0.2, 1.55, spot.z);
+          board.rotation.y = Math.PI / 2;
+        }
+        this.scene.add(board);
       }
     }
-    this.snow.geometry.attributes.position.needsUpdate = true;
   }
+
+  addWalls(c, r, x, z, height, material, wallX, wallZ) {
+    const S = this.cell;
+    const { floor } = this.level;
+    const sides = [
+      [1, 0, wallX, S / 2, 0],
+      [-1, 0, wallX, -S / 2, 0],
+      [0, 1, wallZ, 0, S / 2],
+      [0, -1, wallZ, 0, -S / 2],
+    ];
+
+    for (const [dc, dr, geometry, ox, oz] of sides) {
+      const nc = c + dc;
+      const nr = r + dr;
+      const open = floor[nr] && floor[nr][nc];
+      if (open) continue;
+      const wall = new THREE.Mesh(geometry, material);
+      wall.position.set(x + ox, height / 2, z + oz);
+      this.scene.add(wall);
+
+      // A baseboard sticks out where the wall meets the carpet.
+      const trim = new THREE.Mesh(ox !== 0 ? this.trimZ : this.trimX, this.trim);
+      const nudge = 0.18;
+      trim.position.set(
+        x + ox + (ox === 0 ? 0 : -Math.sign(ox) * nudge),
+        0.09,
+        z + oz + (oz === 0 ? 0 : -Math.sign(oz) * nudge)
+      );
+      this.scene.add(trim);
+    }
+  }
+
 }
 
-// Paint every vertex of a shape the same color.
-function colored(geometry, color) {
-  const count = geometry.attributes.position.count;
-  const arr = new Float32Array(count * 3);
-  for (let i = 0; i < count; i++) {
-    arr[i * 3] = color.r;
-    arr[i * 3 + 1] = color.g;
-    arr[i * 3 + 2] = color.b;
-  }
-  geometry.setAttribute("color", new THREE.BufferAttribute(arr, 3));
-  return geometry;
+function signTexture(word) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#1a140c";
+  ctx.fillRect(0, 0, 256, 64);
+  ctx.fillStyle = "#e6d7a8";
+  ctx.font = "bold 28px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(word, 128, 42);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
 }
 
-// Brown trunk. Kept separate from the leaves so it can use a bark picture.
-function createTrunkGeometry() {
-  const trunk = new THREE.CylinderGeometry(0.11, 0.22, 7.2, 8);
-  trunk.translate(0, 3.6, 0); // sit the trunk on the ground
-  return trunk;
+function surface(map, color, roughness, metalness) {
+  return new THREE.MeshStandardMaterial({ map, color, roughness, metalness });
 }
 
-// Fuller pine: many overlapping cones, plus a few side tufts.
-function createFoliageGeometry() {
-  const parts = [];
-  const layers = 9;
-
-  for (let i = 0; i < layers; i++) {
-    const t = i / (layers - 1);
-    const radius = 1.9 * (1 - t * 0.78);
-    const cone = new THREE.ConeGeometry(radius, 2.15, 8);
-    // Nudge each layer so the tree is not a perfect stack.
-    cone.translate(i % 2 === 0 ? 0.1 : -0.08, 3.5 + i * 0.92, i % 3 === 0 ? 0.06 : -0.05);
-    const green = new THREE.Color().setHSL(0.28, 0.42, 0.14 + (1 - t) * 0.1);
-    parts.push(colored(cone, green));
+function wallpaperTexture() {
+  const size = 512;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#c9b15a";
+  ctx.fillRect(0, 0, size, size);
+  // Paper grain, so the wall is not one flat color between the motifs.
+  for (let i = 0; i < 7000; i++) {
+    ctx.fillStyle = Math.random() > 0.5 ? "rgba(90, 78, 28, 0.07)" : "rgba(255, 236, 180, 0.08)";
+    ctx.fillRect(Math.random() * size, Math.random() * size, 2, 2);
   }
-
-  for (let i = 0; i < 5; i++) {
-    const tuft = new THREE.ConeGeometry(0.48, 1.25, 6);
-    const angle = (i / 5) * Math.PI * 2;
-    tuft.translate(Math.cos(angle) * 0.75, 5.4 + i * 0.55, Math.sin(angle) * 0.75);
-    parts.push(colored(tuft, new THREE.Color().setHSL(0.3, 0.38, 0.2)));
+  const step = 64;
+  for (let y = 0; y < size; y += step) {
+    for (let x = 0; x < size; x += step) {
+      const flip = (x / step + y / step) % 2 === 0 ? 1 : -1;
+      drawDamask(ctx, x + 32, y + 32, flip);
+    }
   }
+  // A faint seam, like two sheets of wallpaper meeting.
+  ctx.strokeStyle = "rgba(70, 58, 20, 0.18)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(size / 2, 0);
+  ctx.lineTo(size / 2, size);
+  ctx.stroke();
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.anisotropy = 8;
+  texture.repeat.set(1.6, 1.35);
+  return texture;
+}
 
-  const merged = mergeGeometries(parts, false);
-  merged.computeVertexNormals();
-  return merged;
+function drawDamask(ctx, cx, cy, flip) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(flip, 1);
+  ctx.fillStyle = "#5f6830";
+  ctx.strokeStyle = "#4e5828";
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(0, -22);
+  ctx.bezierCurveTo(14, -14, 11, 0, 0, 2);
+  ctx.bezierCurveTo(-11, 0, -14, -14, 0, -22);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(0, 4);
+  ctx.bezierCurveTo(12, 8, 9, 20, 0, 24);
+  ctx.bezierCurveTo(-9, 20, -12, 8, 0, 4);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(-5, 0);
+  ctx.quadraticCurveTo(-22, -3, -20, 11);
+  ctx.quadraticCurveTo(-14, 4, -5, 5);
+  ctx.moveTo(5, 0);
+  ctx.quadraticCurveTo(22, -3, 20, 11);
+  ctx.quadraticCurveTo(14, 4, 5, 5);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function carpetTexture() {
+  const size = 256;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  const image = ctx.createImageData(size, size);
+  const data = image.data;
+  const stains = [];
+  for (let s = 0; s < 7; s++) {
+    stains.push({
+      x: Math.random() * size,
+      y: Math.random() * size,
+      radius: 22 + Math.random() * 46,
+      dark: Math.random() > 0.45,
+    });
+  }
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const speck = Math.random();
+      let red = 176;
+      let green = 146;
+      let blue = 72;
+      if (speck > 0.78) {
+        red = 214;
+        green = 186;
+        blue = 108;
+      } else if (speck < 0.2) {
+        red = 128;
+        green = 98;
+        blue = 40;
+      }
+      const fiber = Math.sin(x * 0.37 + y * 0.11) * Math.cos(y * 0.29);
+      red += fiber * 8;
+      green += fiber * 6;
+      for (const stain of stains) {
+        const distance = Math.hypot(x - stain.x, y - stain.y);
+        if (distance >= stain.radius) continue;
+        const amount = (1 - distance / stain.radius) * 0.4;
+        if (stain.dark) {
+          red -= 48 * amount;
+          green -= 34 * amount;
+          blue -= 16 * amount;
+        } else {
+          red += 28 * amount;
+          green += 20 * amount;
+          blue += 8 * amount;
+        }
+      }
+      const index = (y * size + x) * 4;
+      data[index] = Math.max(0, Math.min(255, red));
+      data[index + 1] = Math.max(0, Math.min(255, green));
+      data[index + 2] = Math.max(0, Math.min(255, blue));
+      data[index + 3] = 255;
+    }
+  }
+  ctx.putImageData(image, 0, 0);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.anisotropy = 8;
+  texture.repeat.set(4, 4);
+  return texture;
+}
+
+function ceilingTexture() {
+  const size = 256;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#cfc6aa";
+  ctx.fillRect(0, 0, size, size);
+  const tile = 64;
+  for (let y = 0; y < size; y += tile) {
+    for (let x = 0; x < size; x += tile) {
+      const shade = 214 + Math.floor(Math.random() * 22);
+      ctx.fillStyle = `rgb(${shade}, ${shade - 10}, ${shade - 32})`;
+      ctx.fillRect(x + 4, y + 4, tile - 8, tile - 8);
+      ctx.fillStyle = "rgba(80, 62, 28, 0.22)";
+      ctx.fillRect(x + 4, y + 4, tile - 8, 3);
+      ctx.fillRect(x + 4, y + 4, 3, tile - 8);
+      for (let i = 0; i < 18; i++) {
+        ctx.fillStyle = Math.random() > 0.55 ? "rgba(255, 250, 230, 0.28)" : "rgba(70, 52, 18, 0.14)";
+        ctx.fillRect(x + 8 + Math.random() * (tile - 16), y + 8 + Math.random() * (tile - 16), 2, 2);
+      }
+    }
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.anisotropy = 8;
+  texture.repeat.set(2, 2);
+  return texture;
+}
+
+function exitSign() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 128;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#102016";
+  ctx.fillRect(0, 0, 128, 256);
+  ctx.fillStyle = "#b6ffc4";
+  ctx.font = "bold 36px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("EXIT", 64, 136);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
 }

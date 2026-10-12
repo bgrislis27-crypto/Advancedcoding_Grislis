@@ -1,5 +1,3 @@
-/* Layout for the start screen and the on-screen survival meters. */
-
 * {
   box-sizing: border-box;
 }
@@ -9,10 +7,10 @@ body {
   margin: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden; /* no page scroll; the game fills the window */
-  background: #8aa4b8;
-  font-family: "Segoe UI", "Trebuchet MS", sans-serif;
-  color: #f4f7fa;
+  overflow: hidden;
+  background: #120e08;
+  color: #f3e6c4;
+  font-family: "Segoe UI", sans-serif;
 }
 
 #game {
@@ -21,148 +19,298 @@ body {
   height: 100%;
 }
 
-/* Dark overlay that sits on top of the 3D world until you click play. */
-.start {
+.vignette {
   position: absolute;
-  inset: 0; /* top, right, bottom, left all 0 = cover the whole screen */
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at center, transparent 55%, rgba(0, 0, 0, 0.45) 100%);
+}
+
+#fear {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(circle at center, transparent 42%, rgba(0, 0, 0, 0.75) 100%);
+}
+
+#blackout {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: #000;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
   display: grid;
   place-items: center;
-  background: linear-gradient(180deg, rgba(10, 16, 22, 0.28), rgba(10, 16, 22, 0.55));
-  z-index: 5;
+  background: rgba(10, 8, 4, 0.45);
 }
 
-.start.is-hidden,
-.hud.is-hidden {
-  display: none;
+body:has(.menu-screen:not(.is-hidden)) .vignette {
+  opacity: 0.2;
 }
 
-.start-card {
-  max-width: 460px;
-  padding: 28px 32px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 16px;
-  background: rgba(12, 18, 24, 0.62);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+.menu-screen {
+  display: block;
+  background: transparent;
+}
+
+.menu-wrap {
+  position: absolute;
+  left: 50%;
+  top: 11%;
+  transform: translateX(-50%);
+  width: min(680px, calc(100% - 24px));
   text-align: center;
 }
 
+.logo {
+  margin: 0 0 36px;
+  color: #161910;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: clamp(46px, 7vw, 78px);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  -webkit-text-stroke: 1.4px rgba(248, 240, 206, 0.9);
+  paint-order: stroke fill;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.28), 0 12px 20px rgba(0, 0, 0, 0.2);
+}
+
+.logo span {
+  display: inline-block;
+  margin: 0 0.12em;
+  font-size: 0.42em;
+  vertical-align: 0.45em;
+}
+
+.menu-list {
+  width: min(340px, 100%);
+  margin: 0 auto;
+}
+
+.menu-wrap.is-wide {
+  width: min(1040px, calc(100% - 24px));
+}
+
+.menu-columns {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px 18px;
+  width: min(980px, 100%);
+  margin: 0 auto;
+}
+
+.menu-columns .menu-list {
+  width: min(250px, 100%);
+  padding: 8px 12px 4px;
+  background: rgba(12, 10, 6, 0.46);
+}
+
+.menu-list button.is-picked {
+  color: #fff;
+}
+
+.menu-list button.is-picked::before {
+  height: 2px;
+  background: #fff;
+}
+
+.menu-label,
+.menu-list button {
+  position: relative;
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 11px 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: rgba(255, 252, 245, 0.94);
+  font-family: "Libre Baskerville", Georgia, serif;
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.menu-label {
+  margin-bottom: 6px;
+  font-size: 14px;
+  letter-spacing: 0.28em;
+  cursor: default;
+}
+
+.menu-list button {
+  cursor: pointer;
+}
+
+.menu-list button:hover {
+  color: #fff;
+}
+
+.menu-label::before,
+.menu-list button::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.menu-note {
+  margin: 4px 0 8px;
+  color: rgba(255, 252, 245, 0.92);
+  font-family: "Libre Baskerville", Georgia, serif;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  line-height: 1.9;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
+}
+
+.headphones {
+  position: absolute;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%);
+  margin: 0;
+  color: rgba(255, 252, 245, 0.92);
+  font-family: "Libre Baskerville", Georgia, serif;
+  font-size: 16px;
+  font-style: italic;
+  letter-spacing: 0.16em;
+  white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.is-hidden {
+  display: none;
+}
+
+.card {
+  width: min(460px, calc(100% - 32px));
+  padding: 28px;
+  text-align: center;
+  background: rgba(28, 22, 10, 0.82);
+  border: 1px solid rgba(214, 176, 84, 0.35);
+}
+
+.card.danger {
+  border-color: rgba(180, 40, 40, 0.7);
+}
+
 .kicker {
-  margin: 0 0 6px;
-  color: #d7e7c8;
+  margin: 0 0 8px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
+  color: #e0c27a;
   font-size: 12px;
 }
 
 h1 {
   margin: 0 0 12px;
-  font-size: 42px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-size: 40px;
+  letter-spacing: 0.04em;
 }
 
-.start-copy {
-  margin: 0 0 22px;
-  color: #d5dee6;
+p {
+  margin: 0 0 14px;
   line-height: 1.45;
+  color: #efe2c0;
+}
+
+.controls {
+  color: #c8b48a;
+  font-size: 14px;
 }
 
 button {
-  appearance: none;
   border: 0;
   border-radius: 999px;
   padding: 12px 22px;
-  background: #e8f0e2;
-  color: #1c2418;
+  background: #f0e2bc;
+  color: #241c0e;
   font: inherit;
   font-weight: 700;
-  letter-spacing: 0.04em;
   cursor: pointer;
 }
 
 .hud {
   position: absolute;
   inset: 0;
-  pointer-events: none; /* clicks go through the HUD into the game */
-  z-index: 4;
+  pointer-events: none;
 }
 
-.crosshair {
+.smile-hud {
   position: absolute;
   left: 50%;
-  top: 50%;
-  width: 8px;
-  height: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: 50%;
-  transform: translate(-50%, -50%); /* center the tiny circle */
+  bottom: 18px;
+  transform: translateX(-50%);
+  width: 92px;
+  text-align: center;
 }
 
-/* Stack of survival rings in the bottom-left corner. */
-.meters {
+.smile {
+  display: block;
+  width: 78px;
+  height: 26px;
+  margin: 0 auto;
+}
+
+.timer {
+  margin: -2px 0 0;
+  color: #b7e6f2;
+  font-size: 22px;
+  letter-spacing: 0.08em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+
+.prompt {
+  position: absolute;
+  left: 50%;
+  bottom: 92px;
+  transform: translateX(-50%);
+  margin: 0;
+  min-height: 1.2em;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+.battery {
+  position: absolute;
+  left: 28px;
+  bottom: 46px;
+  width: 180px;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(214, 176, 84, 0.4);
+}
+
+#battery-fill {
+  width: 100%;
+  height: 100%;
+  background: #d6b454;
+}
+
+.stamina {
   position: absolute;
   left: 28px;
   bottom: 28px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  width: 180px;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(240, 226, 188, 0.45);
 }
 
-.ring {
-  width: 46px;
-  height: 46px;
-  display: grid;
-  place-items: center;
-  position: relative;
-  border-radius: 50%;
-  background: rgba(8, 12, 10, 0.22);
-}
-
-.ring::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  /* --p comes from JavaScript. White = filled, faded = empty. */
-  background: conic-gradient(rgba(255, 255, 255, 0.95) var(--p), rgba(255, 255, 255, 0.16) 0);
-  mask: radial-gradient(farthest-side, transparent 62%, #000 63%);
-}
-
-.ring svg {
-  width: 18px;
-  height: 18px;
-  fill: rgba(255, 255, 255, 0.92);
-}
-
-.draw-meter {
-  position: absolute;
-  left: 50%;
-  bottom: 34px;
-  width: min(220px, 30vw);
-  height: 3px;
-  transform: translateX(-50%);
-  background: rgba(255, 255, 255, 0.18);
-}
-
-.draw-meter::after {
-  content: "";
-  display: block;
-  width: var(--draw, 18%);
+#stamina-fill {
+  width: 100%;
   height: 100%;
-  background: #fff;
-}
-
-.arrows {
-  position: absolute;
-  right: 36px;
-  bottom: 30px;
-  display: flex;
-  gap: 10px;
-  align-items: baseline;
-  font-size: 18px;
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
-}
-
-.arrows span {
-  opacity: 0.55;
+  background: #f0e2bc;
 }
